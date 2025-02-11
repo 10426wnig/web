@@ -1,0 +1,146 @@
+@{
+   ViewBag.Title = "Blog";
+   Layout = "../Shared/_LayoutInner.cshtml";
+}
+
+<!-- Inline CSS for fixed image container -->
+<style>
+   .fixed-img-container {
+      height: 250px; /* fixed height for image container */
+      overflow: hidden;
+   }
+   .fixed-img-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* ensures the image covers the container properly */
+   }
+</style>
+
+<!-- Page Header -->
+<section class="inner_page_head py-5 bg-light">
+   <div class="container">
+      <div class="row">
+         <div class="col-12 text-center">
+            <h3 class="display-4">Blog</h3>
+         </div>
+      </div>
+   </div>
+</section>
+
+<!-- Latest Blogs Section -->
+<section class="blog_section py-5">
+   <div class="container">
+      <div class="text-center mb-5">
+         <h2 class="fw-bold">Latest Posts</h2>
+         <p class="text-muted">Read our recent publications</p>
+      </div>
+      <div class="row">
+         <!-- Post 1 -->
+         <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm">
+               <div class="position-relative fixed-img-container">
+                  <img src="@Url.Content("~/Content/images/p1.png")" class="img-fluid" alt="Blog Post">
+                  <div class="badge bg-primary position-absolute" style="top: 15px; left: 15px; font-size: 0.9rem; padding: 0.75rem;">
+                     <div class="text-center">
+                        <div class="fw-bold">19</div>
+                        <div>Jan</div>
+                     </div>
+                  </div>
+               </div>
+               <div class="card-body">
+                  <h5 class="card-title">Eius, dolor? Vel velit sed doloremque</h5>
+                  <p class="card-text text-muted">
+                     Incidunt magni explicabo ullam ipsa quo consequuntur eveniet illo? Aspernatur nam dolorem a neque? Esse eaque dolores hic debitis cupiditate, ad beatae voluptatem numquam dignissimos ab porro.
+                  </p>
+                  <a href="#" class="btn btn-outline-primary">Read More</a>
+               </div>
+            </div>
+         </div>
+         <!-- Post 2 -->
+         <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm">
+               <div class="position-relative fixed-img-container">
+                  <img src="@Url.Content("~/Content/images/p3.png")" class="img-fluid" alt="Blog Post">
+                  <div class="badge bg-primary position-absolute" style="top: 15px; left: 15px; font-size: 0.9rem; padding: 0.75rem;">
+                     <div class="text-center">
+                        <div class="fw-bold">19</div>
+                        <div>Jan</div>
+                     </div>
+                  </div>
+               </div>
+               <div class="card-body">
+                  <h5 class="card-title">Minus aliquid alias porro iure fuga</h5>
+                  <p class="card-text text-muted">
+                     Officiis veritatis id facere commodi eum quis nisi. Eum quas expedita cumque perspiciatis. Commodi explicabo non eveniet. Sint perferendis aspernatur est aperiam minima.
+                  </p>
+                  <a href="#" class="btn btn-outline-primary">Read More</a>
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
+</section>
+
+<!-- Become an Author Section -->
+<section class="author_section py-5" style="background-color: #f9f9f9;">
+   <div class="container">
+      <div class="text-center mb-5">
+         <h2 class="fw-bold">Become Our Author</h2>
+         <p class="text-muted">Share your experience and join our creative community!</p>
+      </div>
+      <div class="row align-items-center">
+         <!-- Image Column -->
+         <div class="col-md-5 mb-4">
+            <img src="@Url.Content("~/Content/images/client.jpg")" alt="Become an Author" class="img-fluid rounded shadow">
+         </div>
+         <!-- Form Column -->
+         <div class="col-md-7">
+            <div class="card border-0 shadow-sm">
+               <div class="card-body p-4">
+                  <p class="mb-4">
+                     Would you like to share your experience and knowledge? Fill out the form below and become a part of our community.
+                  </p>
+                  <form action="#" method="post">
+                     <div class="row mb-3">
+                        <div class="col-md-6">
+                           <label for="firstName" class="form-label">First Name</label>
+                           <input type="text" class="form-control" id="firstName" placeholder="Your First Name" required>
+                        </div>
+                        <div class="col-md-6">
+                           <label for="lastName" class="form-label">Last Name</label>
+                           <input type="text" class="form-control" id="lastName" placeholder="Your Last Name" required>
+                        </div>
+                     </div>
+                     <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" placeholder="example@mail.com" required>
+                     </div>
+                     <div class="mb-3">
+                        <label for="blogTopic" class="form-label">Blog Topic</label>
+                        <input type="text" class="form-control" id="blogTopic" placeholder="e.g., Fashion, Style, Trends">
+                     </div>
+                     <div class="mb-3">
+                        <label for="experience" class="form-label">Tell us about yourself and your experience</label>
+                        <textarea class="form-control" id="experience" rows="4" placeholder="Your experience" required></textarea>
+                     </div>
+                     <div class="mb-3">
+                        <label for="motivation" class="form-label">Why do you want to become our author?</label>
+                        <textarea class="form-control" id="motivation" rows="3" placeholder="Your motivation" required></textarea>
+                     </div>
+                     <div class="mb-4">
+                        <label for="writingFrequency" class="form-label">How often do you plan to write?</label>
+                        <select class="form-select" id="writingFrequency" required>
+                           <option value="" disabled selected>Select frequency</option>
+                           <option value="weekly">Weekly</option>
+                           <option value="biweekly">Bi-weekly</option>
+                           <option value="monthly">Monthly</option>
+                        </select>
+                     </div>
+                     <button type="submit" class="btn btn-primary w-100">Submit Application</button>
+                  </form>
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
+</section>
