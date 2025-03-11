@@ -1,0 +1,115 @@
+@model Famm.Web.Controllers.LoginViewModel
+@{
+    ViewBag.Title = "Login";
+}
+
+<section class="login_section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="login_box">
+                    <div class="heading_container heading_center">
+                        <h2>Login to Your Account</h2>
+                    </div>
+                    <div class="login_form">
+                        @if (Model != null && !string.IsNullOrEmpty(Model.ErrorMessage))
+                        {
+                            <div class="alert alert-danger">
+                                @Model.ErrorMessage
+                            </div>
+                        }
+
+                        @if (TempData["SuccessMessage"] != null)
+                        {
+                            <div class="alert alert-success">
+                                @TempData["SuccessMessage"]
+                            </div>
+                        }
+
+                        @using (Html.BeginForm("Login", "AuthFlow", FormMethod.Post, new { @class = "form" }))
+                        {
+                            @Html.AntiForgeryToken()
+                            @Html.HiddenFor(m => m.ReturnUrl)
+                            
+                            <div class="form-group">
+                                <label for="Email">Email</label>
+                                @Html.TextBoxFor(m => m.Email, new { @class = "form-control", placeholder = "Email", required = "required", type = "email" })
+                            </div>
+                            <div class="form-group">
+                                <label for="Password">Password</label>
+                                @Html.PasswordFor(m => m.Password, new { @class = "form-control", placeholder = "Password", required = "required" })
+                            </div>
+                            <div class="form-group form-check">
+                                @Html.CheckBoxFor(m => m.RememberMe, new { @class = "form-check-input" })
+                                <label class="form-check-label" for="RememberMe">Remember me</label>
+                            </div>
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-solid">Login</button>
+                            </div>
+                            <div class="form-group text-center">
+                                <p>Don't have an account? <a href="@Url.Action("Register", "AuthFlow")">Register</a></p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .login_section {
+        padding: 90px 0;
+        background-color: #f7f7f7;
+    }
+
+    .login_box {
+        background-color: #ffffff;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .heading_container h2 {
+        font-weight: bold;
+        margin-bottom: 30px;
+        color: #002c3e;
+        text-align: center;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-control {
+        height: 50px;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        padding: 0 15px;
+        font-size: 16px;
+    }
+
+    .btn-solid {
+        width: 100%;
+        height: 50px;
+        border-radius: 5px;
+        background-color: #f7444e;
+        color: #ffffff;
+        font-weight: 600;
+        border: none;
+        transition: all 0.3s;
+    }
+
+    .btn-solid:hover {
+        background-color: #002c3e;
+    }
+
+    a {
+        color: #f7444e;
+        text-decoration: none;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+</style>
