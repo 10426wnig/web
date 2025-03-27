@@ -1,0 +1,120 @@
+﻿@model List<Famm.Domain.Models.Category>
+@{
+    ViewBag.Title = "Управление категориями";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h3>Категории</h3>
+                <a href="@Url.Action("CreateCategory", "Admin")" class="btn admin-btn admin-btn-primary">
+                    <i class="bi bi-plus-circle"></i> Добавить категорию
+                </a>
+            </div>
+            <div class="admin-card-body">
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        @TempData["SuccessMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        @TempData["ErrorMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                @if (Model.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover admin-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px">ID</th>
+                                    <th>Категория</th>
+                                    <th>Родительская категория</th>
+                                    <th style="width: 100px">Порядок</th>
+                                    <th style="width: 100px">Статус</th>
+                                    <th style="width: 150px">Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var category in Model)
+                                {
+                                    <tr>
+                                        <td>@category.Id</td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                @if (!string.IsNullOrEmpty(category.ImageUrl))
+                                                {
+                                                    <img src="@category.ImageUrl" alt="@category.Name" style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px;" />
+                                                }
+                                                else
+                                                {
+                                                    <div style="width: 50px; height: 50px; background-color: #eee; margin-right: 10px; display: flex; align-items: center; justify-content: center;">
+                                                        <i class="bi bi-folder"></i>
+                                                    </div>
+                                                }
+                                                <div>
+                                                    <div class="fw-bold">@category.Name</div>
+                                                    @if (!string.IsNullOrEmpty(category.Description))
+                                                    {
+                                                        <div class="small text-muted text-truncate" style="max-width: 250px;">@category.Description</div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            @if (category.ParentCategory != null)
+                                            {
+                                                <span>@category.ParentCategory.Name</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Нет</span>
+                                            }
+                                        </td>
+                                        <td>@category.DisplayOrder</td>
+                                        <td>
+                                            @if (category.IsActive)
+                                            {
+                                                <span class="badge bg-success">Активна</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Неактивна</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="d-flex">
+                                                <a href="@Url.Action("EditCategory", "Admin", new { id = category.Id })" class="btn btn-sm btn-primary me-1" title="Редактировать">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <a href="@Url.Action("DeleteCategory", "Admin", new { id = category.Id })" class="btn btn-sm btn-danger" title="Удалить">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info text-center">
+                        <i class="bi bi-info-circle fs-4 me-2"></i> Категории не найдены.
+                        <p>Добавьте первую категорию, нажав на кнопку "Добавить категорию".</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div> 

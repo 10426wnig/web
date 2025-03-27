@@ -1,0 +1,95 @@
+﻿@model Famm.Domain.Models.Category
+@{
+    ViewBag.Title = "Удаление категории";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-6 mx-auto">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h3><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i> Удаление категории</h3>
+            </div>
+            <div class="admin-card-body">
+                <div class="alert alert-danger mb-4">
+                    <p class="mb-0"><strong>Внимание!</strong> Вы уверены, что хотите удалить эту категорию?</p>
+                    <p class="small mb-0 mt-2">Категория может быть удалена только если в ней нет товаров и подкатегорий.</p>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                        {
+                            <img src="@Model.ImageUrl" alt="@Model.Name" style="width: 100px; height: 100px; object-fit: cover; margin-right: 20px; border-radius: 5px;" />
+                        }
+                        else
+                        {
+                            <div style="width: 100px; height: 100px; background-color: #eee; margin-right: 20px; border-radius: 5px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-folder fs-1 text-muted"></i>
+                            </div>
+                        }
+                        <div>
+                            <h4 class="mb-1">@Model.Name</h4>
+                            @if (Model.ParentCategory != null)
+                            {
+                                <p class="text-muted mb-0">Родительская категория: @Model.ParentCategory.Name</p>
+                            }
+                            <p class="text-muted mb-0">Порядок отображения: @Model.DisplayOrder</p>
+                            <p class="text-muted mb-0">Статус: 
+                                @if (Model.IsActive)
+                                {
+                                    <span class="badge bg-success">Активна</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Неактивна</span>
+                                }
+                            </p>
+                        </div>
+                    </div>
+                    
+                    @if (!string.IsNullOrEmpty(Model.Description))
+                    {
+                        <div class="border-top border-bottom py-3 mb-3">
+                            <p class="text-muted"><strong>Описание:</strong> @Model.Description</p>
+                        </div>
+                    }
+                    
+                    <div class="row">
+                        <div class="col-6">
+                            <p class="text-muted"><strong>Количество товаров:</strong> @Model.Products.Count</p>
+                        </div>
+                        <div class="col-6">
+                            <p class="text-muted"><strong>Подкатегорий:</strong> @Model.ChildCategories.Count</p>
+                        </div>
+                    </div>
+                </div>
+                
+                @using (Html.BeginForm("DeleteCategory", "Admin", FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+                    @Html.HiddenFor(model => model.Id)
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="@Url.Action("Categories", "Admin")" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Отмена
+                        </a>
+                        
+                        @if (Model.Products.Count > 0 || Model.ChildCategories.Count > 0)
+                        {
+                            <button type="button" class="btn btn-danger" disabled title="Нельзя удалить категорию с товарами или подкатегориями">
+                                <i class="bi bi-trash"></i> Удалить категорию
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Удалить категорию
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div> 

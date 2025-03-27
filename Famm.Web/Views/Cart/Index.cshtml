@@ -1,0 +1,313 @@
+﻿@model List<Famm.Web.Controllers.CartItem>
+@{
+    ViewBag.Title = "Корзина";
+    Layout = "~/Views/Shared/_LayoutInner.cshtml";
+}
+
+<!-- inner page section -->
+<section class="inner_page_head">
+    <div class="container_fuild">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="full">
+                    <h3>Корзина</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- end inner page section -->
+
+<!-- cart section -->
+<section class="py-5">
+    <div class="container">
+        @if (Model.Count == 0)
+        {
+            <div class="text-center my-5">
+                <i class="bi bi-cart-x" style="font-size: 60px;"></i>
+                <h3 class="mt-3">Ваша корзина пуста</h3>
+                <p class="mb-4">Добавьте товары в корзину, чтобы оформить заказ</p>
+                <a href="@Url.Action("Product", "Home")" class="btn btn-primary">Перейти к товарам</a>
+            </div>
+        }
+        else
+        {
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">Товары в корзине</h5>
+                        </div>
+                        <div class="card-body">
+                            @foreach (var item in Model)
+                            {
+                                <div class="cart-item mb-3 pb-3 border-bottom" data-id="@item.ProductId">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-2">
+                                            <img src="@(string.IsNullOrEmpty(item.ImageUrl) ? Url.Content("~/Content/images/p1.png") : item.ImageUrl)" 
+                                                 class="img-fluid rounded" alt="@item.ProductName">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <h5>@item.ProductName</h5>
+                                            <p class="text-muted mb-0">Цена: @item.Price.ToString("0.00") MDL</p>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="input-group quantity-control">
+                                                <button class="btn btn-outline-secondary quantity-btn" type="button" data-action="decrease">-</button>
+                                                <input type="number" class="form-control text-center product-quantity" value="@item.Quantity" min="1">
+                                                <button class="btn btn-outline-secondary quantity-btn" type="button" data-action="increase">+</button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2 text-end">
+                                            <span class="fw-bold item-total">@item.TotalPrice.ToString("0.00") MDL</span>
+                                        </div>
+                                        <div class="col-md-1 text-end">
+                                            <button class="btn btn-sm btn-link text-danger remove-from-cart">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">Оформление заказа</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-3">
+                                <span>Товары (@Model.Sum(x => x.Quantity))</span>
+                                <span class="fw-bold">@Model.Sum(x => x.TotalPrice).ToString("0.00") MDL</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3">
+                                <span>Доставка</span>
+                                <span class="fw-bold">0.00 MDL</span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between mb-4">
+                                <span class="fw-bold">Итого:</span>
+                                <span class="fw-bold fs-5">@Model.Sum(x => x.TotalPrice).ToString("0.00") MDL</span>
+                            </div>
+                            <button class="btn btn-primary w-100" id="proceedToCheckout">Оформить заказ</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</section>
+<!-- end cart section -->
+
+<!-- Checkout Modal -->
+<div class="modal fade" id="checkoutModal" tabindex="-1" aria-labelledby="checkoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="checkoutModalLabel">Оформление заказа</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">Укажите информацию для доставки:</p>
+                <form id="checkoutForm">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label for="customerName" class="form-label">Ваше имя</label>
+                        <input type="text" class="form-control" id="customerName" name="customerName" 
+                            value="@(User.Identity.IsAuthenticated ? (User.Identity.Name.Split('@')[0]) : "")" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="customerEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="customerEmail" name="customerEmail"
+                            value="@(User.Identity.IsAuthenticated ? User.Identity.Name : "")" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="customerPhone" class="form-label">Телефон</label>
+                        <input type="tel" class="form-control" id="customerPhone" name="customerPhone" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Адрес доставки</label>
+                        <textarea class="form-control" id="address" name="address" rows="3" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="submitOrder">Оформить заказ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="successModalLabel">Заказ оформлен</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <i class="bi bi-check-circle-fill text-success" style="font-size: 48px;"></i>
+                    <h4 class="mt-3">Спасибо за ваш заказ!</h4>
+                    <p id="successMessage"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="confirmSuccess">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+<script>
+    $(document).ready(function() {
+        // Изменение количества товаров
+        $('.quantity-btn').click(function() {
+            var action = $(this).data('action');
+            var itemContainer = $(this).closest('.cart-item');
+            var productId = itemContainer.data('id');
+            var quantityInput = itemContainer.find('.product-quantity');
+            var currentQuantity = parseInt(quantityInput.val());
+            
+            if (action === 'increase') {
+                quantityInput.val(currentQuantity + 1);
+            } else if (action === 'decrease' && currentQuantity > 1) {
+                quantityInput.val(currentQuantity - 1);
+            }
+            
+            // Обновляем количество товара в корзине
+            updateQuantity(productId, parseInt(quantityInput.val()));
+        });
+        
+        // Обновление при ручном вводе количества
+        $('.product-quantity').change(function() {
+            var itemContainer = $(this).closest('.cart-item');
+            var productId = itemContainer.data('id');
+            var quantity = parseInt($(this).val());
+            
+            if (quantity < 1) {
+                $(this).val(1);
+                quantity = 1;
+            }
+            
+            updateQuantity(productId, quantity);
+        });
+        
+        // Удаление товара из корзины
+        $('.remove-from-cart').click(function() {
+            var itemContainer = $(this).closest('.cart-item');
+            var productId = itemContainer.data('id');
+            
+            removeFromCart(productId);
+        });
+        
+        // Обработка нажатия на кнопку "Оформить заказ"
+        $('#proceedToCheckout').click(function() {
+            var modal = new bootstrap.Modal(document.getElementById('checkoutModal'));
+            modal.show();
+        });
+        
+        // Отправка формы заказа
+        $('#submitOrder').click(function() {
+            // Проверка валидности формы
+            if (!$('#checkoutForm')[0].checkValidity()) {
+                $('#checkoutForm')[0].reportValidity();
+                return;
+            }
+            
+            // Сбор данных из формы
+            var formData = {
+                customerName: $('#customerName').val(),
+                customerEmail: $('#customerEmail').val(),
+                customerPhone: $('#customerPhone').val(),
+                address: $('#address').val(),
+                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+            };
+            
+            // Отправка запроса на сервер
+            $.ajax({
+                url: '@Url.Action("Checkout", "Cart")',
+                type: 'POST',
+                data: formData,
+                success: function(response) {
+                    // Закрываем модальное окно заказа
+                    var checkoutModal = bootstrap.Modal.getInstance(document.getElementById('checkoutModal'));
+                    if (checkoutModal) checkoutModal.hide();
+                    
+                    if (response.success) {
+                        $('#successMessage').text(response.message);
+                        // Открываем модальное окно успеха
+                        var successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                        successModal.show();
+                    } else {
+                        alert(response.message || 'Произошла ошибка при оформлении заказа.');
+                    }
+                },
+                error: function() {
+                    // Закрываем модальное окно
+                    var checkoutModal = bootstrap.Modal.getInstance(document.getElementById('checkoutModal'));
+                    if (checkoutModal) checkoutModal.hide();
+                    alert('Произошла ошибка при отправке запроса.');
+                }
+            });
+        });
+        
+        // После успешного оформления заказа перенаправляем на страницу с товарами
+        $('#confirmSuccess').click(function() {
+            window.location.href = '@Url.Action("Product", "Home")';
+        });
+        
+        // Функция обновления количества товара в корзине
+        function updateQuantity(productId, quantity) {
+            $.ajax({
+                url: '@Url.Action("UpdateQuantity", "Cart")',
+                type: 'POST',
+                data: {
+                    productId: productId,
+                    quantity: quantity,
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Обновляем страницу
+                        location.reload();
+                    } else {
+                        alert(response.message || 'Произошла ошибка при обновлении корзины.');
+                    }
+                },
+                error: function() {
+                    alert('Произошла ошибка при отправке запроса.');
+                }
+            });
+        }
+        
+        // Функция удаления товара из корзины
+        function removeFromCart(productId) {
+            $.ajax({
+                url: '@Url.Action("RemoveFromCart", "Cart")',
+                type: 'POST',
+                data: {
+                    productId: productId,
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Обновляем страницу
+                        location.reload();
+                    } else {
+                        alert(response.message || 'Произошла ошибка при удалении товара из корзины.');
+                    }
+                },
+                error: function() {
+                    alert('Произошла ошибка при отправке запроса.');
+                }
+            });
+        }
+    });
+</script>
+} 
