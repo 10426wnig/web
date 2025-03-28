@@ -1,0 +1,203 @@
+﻿@model Famm.Web.Controllers.ProductListViewModel
+@{
+    ViewBag.Title = "Управление товарами";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h3>Товары</h3>
+                <a href="@Url.Action("CreateProduct", "Admin")" class="btn admin-btn admin-btn-primary">
+                    <i class="bi bi-plus-circle"></i> Добавить товар
+                </a>
+            </div>
+            <div class="admin-card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        @using (Html.BeginForm("Products", "Admin", FormMethod.Get, new { @class = "search-form" }))
+                        {
+                            <div class="input-group">
+                                <input type="text" name="search" class="form-control" placeholder="Поиск товаров..." value="@Model.Search" />
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                                @if (!string.IsNullOrEmpty(Model.Search))
+                                {
+                                    <a href="@Url.Action("Products", "Admin")" class="btn btn-outline-secondary">
+                                        <i class="bi bi-x-circle"></i> Сбросить
+                                    </a>
+                                }
+                            </div>
+                        }
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <span class="text-muted">Всего товаров: @Model.Products.Count из @(Model.TotalPages * Model.PageSize)</span>
+                    </div>
+                </div>
+
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        @TempData["SuccessMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                @if (TempData["WarningMessage"] != null)
+                {
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        @TempData["WarningMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                @if (Model.Products.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover admin-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px">ID</th>
+                                    <th>Товар</th>
+                                    <th>Категория</th>
+                                    <th>Цена</th>
+                                    <th>Наличие</th>
+                                    <th>Статус</th>
+                                    <th style="width: 150px">Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var product in Model.Products)
+                                {
+                                    <tr>
+                                        <td>@product.Id</td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                @if (!string.IsNullOrEmpty(product.ImageUrl))
+                                                {
+                                                    <img src="@product.ImageUrl" alt="@product.Name" style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px;" />
+                                                }
+                                                else
+                                                {
+                                                    <div style="width: 50px; height: 50px; background-color: #eee; margin-right: 10px; display: flex; align-items: center; justify-content: center;">
+                                                        <i class="bi bi-image"></i>
+                                                    </div>
+                                                }
+                                                <div>
+                                                    <div class="fw-bold">@product.Name</div>
+                                                    <div class="small text-muted">SKU: @product.SKU</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>@(product.Category?.Name ?? "Без категории")</td>
+                                        <td>
+                                            @if (product.DiscountPrice.HasValue && product.DiscountPrice < product.Price)
+                                            {
+                                                <span class="text-muted text-decoration-line-through">@product.Price.ToString("N2") MDL</span><br />
+                                                <span class="text-danger fw-bold">@product.DiscountPrice.Value.ToString("N2") MDL</span>
+                                            }
+                                            else
+                                            {
+                                                <span>@product.Price.ToString("N2") MDL</span>
+                                            }
+                                        </td>
+                                        <td>@product.StockQuantity</td>
+                                        <td>
+                                            @if (product.IsAvailable)
+                                            {
+                                                <span class="badge bg-success">Активен</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Неактивен</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="d-flex">
+                                                <a href="@Url.Action("EditProduct", "Admin", new { id = product.Id })" class="btn btn-sm btn-primary me-1" title="Редактировать">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <a href="@Url.Action("DeleteProduct", "Admin", new { id = product.Id })" class="btn btn-sm btn-danger" title="Удалить">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    if (Model.TotalPages > 1)
+                    {
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination justify-content-center">
+                                @if (Model.CurrentPage > 1)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link" href="@Url.Action("Products", "Admin", new { search = Model.Search, page = Model.CurrentPage - 1, pageSize = Model.PageSize })">
+                                            <i class="bi bi-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                }
+                                else
+                                {
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+                                    </li>
+                                }
+
+                                @{
+                                    var startPage = Math.Max(1, Model.CurrentPage - 2);
+                                    var endPage = Math.Min(Model.TotalPages, startPage + 4);
+                                    if (endPage - startPage < 4 && startPage > 1)
+                                    {
+                                        startPage = Math.Max(1, endPage - 4);
+                                    }
+                                }
+
+                                @for (int i = startPage; i <= endPage; i++)
+                                {
+                                    <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                        <a class="page-link" href="@Url.Action("Products", "Admin", new { search = Model.Search, page = i, pageSize = Model.PageSize })">@i</a>
+                                    </li>
+                                }
+
+                                @if (Model.CurrentPage < Model.TotalPages)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link" href="@Url.Action("Products", "Admin", new { search = Model.Search, page = Model.CurrentPage + 1, pageSize = Model.PageSize })">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                }
+                                else
+                                {
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+                                    </li>
+                                }
+                            </ul>
+                        </nav>
+                    }
+                }
+                else
+                {
+                    <div class="alert alert-info text-center">
+                        <i class="bi bi-info-circle fs-4 me-2"></i> Товары не найдены.
+                        @if (!string.IsNullOrEmpty(Model.Search))
+                        {
+                            <p>Измените параметры поиска или <a href="@Url.Action("Products", "Admin")">сбросьте фильтры</a>.</p>
+                        }
+                        else
+                        {
+                            <p>Добавьте первый товар, нажав на кнопку "Добавить товар".</p>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div> 

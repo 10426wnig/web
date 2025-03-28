@@ -1,0 +1,191 @@
+﻿@model Famm.Web.Controllers.AdminDashboardViewModel
+@{
+    ViewBag.Title = "Панель управления";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="row mb-4">
+    <div class="col-md-4 mb-4">
+        <div class="stats-card">
+            <div class="stats-card-icon" style="background-color: var(--info);">
+                <i class="bi bi-box-seam"></i>
+            </div>
+            <div class="stats-card-title">Всего товаров</div>
+            <div class="stats-card-value">@Model.TotalProducts</div>
+            <div class="stats-card-description">Всего товаров в каталоге</div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="stats-card">
+            <div class="stats-card-icon" style="background-color: var(--success);">
+                <i class="bi bi-cart3"></i>
+            </div>
+            <div class="stats-card-title">Всего заказов</div>
+            <div class="stats-card-value">@Model.TotalOrders</div>
+            <div class="stats-card-description">Общее количество заказов</div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="stats-card">
+            <div class="stats-card-icon" style="background-color: var(--warning);">
+                <i class="bi bi-people"></i>
+            </div>
+            <div class="stats-card-title">Всего пользователей</div>
+            <div class="stats-card-value">@Model.TotalUsers</div>
+            <div class="stats-card-description">Зарегистрированных пользователей</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <span>Последние заказы</span>
+                <a href="@Url.Action("Orders", "Admin")" class="btn btn-sm btn-primary">Все заказы</a>
+            </div>
+            <div class="admin-card-body">
+                <div class="table-responsive">
+                    @if (Model.RecentOrders != null && Model.RecentOrders.Any())
+                    {
+                        <table class="table admin-table">
+                            <thead>
+                                <tr>
+                                    <th>№ заказа</th>
+                                    <th>Дата</th>
+                                    <th>Клиент</th>
+                                    <th>Сумма</th>
+                                    <th>Статус</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var order in Model.RecentOrders)
+                                {
+                                    <tr>
+                                        <td><a href="@Url.Action("OrderDetails", "Admin", new { id = order.Id })">@order.OrderNumber</a></td>
+                                        <td>@order.OrderDate.ToString("dd.MM.yyyy HH:mm")</td>
+                                        <td>@order.User.FullName</td>
+                                        <td>@order.TotalAmount.ToString("N2") MDL</td>
+                                        <td>
+                                            @switch (order.Status)
+                                            {
+                                                case Famm.Domain.Models.Enums.OrderStatus.Pending:
+                                                    <span class="badge bg-warning">Ожидание</span>
+                                                    break;
+                                                case Famm.Domain.Models.Enums.OrderStatus.Processing:
+                                                    <span class="badge bg-info">Обработка</span>
+                                                    break;
+                                                case Famm.Domain.Models.Enums.OrderStatus.Shipped:
+                                                    <span class="badge bg-primary">Отправлен</span>
+                                                    break;
+                                                case Famm.Domain.Models.Enums.OrderStatus.Delivered:
+                                                    <span class="badge bg-success">Доставлен</span>
+                                                    break;
+                                                case Famm.Domain.Models.Enums.OrderStatus.Cancelled:
+                                                    <span class="badge bg-danger">Отменен</span>
+                                                    break;
+                                                default:
+                                                    <span class="badge bg-secondary">@order.Status</span>
+                                                    break;
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">Нет заказов для отображения</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <span>Популярные товары</span>
+                <a href="@Url.Action("Products", "Admin")" class="btn btn-sm btn-primary">Все товары</a>
+            </div>
+            <div class="admin-card-body">
+                <div class="table-responsive">
+                    @if (Model.TopSellingProducts != null && Model.TopSellingProducts.Any())
+                    {
+                        <table class="table admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Товар</th>
+                                    <th>Категория</th>
+                                    <th>Цена</th>
+                                    <th>Наличие</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var product in Model.TopSellingProducts)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                @if (!string.IsNullOrEmpty(product.ImageUrl))
+                                                {
+                                                    <img src="@product.ImageUrl" alt="@product.Name" style="width: 40px; height: 40px; object-fit: cover; margin-right: 10px;" />
+                                                }
+                                                else
+                                                {
+                                                    <div style="width: 40px; height: 40px; background-color: #eee; margin-right: 10px; display: flex; align-items: center; justify-content: center;">
+                                                        <i class="bi bi-image"></i>
+                                                    </div>
+                                                }
+                                                <a href="@Url.Action("EditProduct", "Admin", new { id = product.Id })">@product.Name</a>
+                                            </div>
+                                        </td>
+                                        <td>@product.Category.Name</td>
+                                        <td>@product.CurrentPrice.ToString("N2") MDL</td>
+                                        <td>
+                                            @if (product.IsAvailable && product.StockQuantity > 0)
+                                            {
+                                                <span class="badge bg-success">В наличии (@product.StockQuantity)</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Нет в наличии</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">Нет товаров для отображения</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <span>Быстрые действия</span>
+            </div>
+            <div class="admin-card-body">
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="@Url.Action("CreateProduct", "Admin")" class="btn admin-btn admin-btn-primary">
+                        <i class="bi bi-plus-circle"></i> Добавить товар
+                    </a>
+                    <a href="@Url.Action("CreateCategory", "Admin")" class="btn admin-btn admin-btn-secondary">
+                        <i class="bi bi-folder-plus"></i> Добавить категорию
+                    </a>
+                    <a href="@Url.Action("Orders", "Admin", new { status = "Pending" })" class="btn admin-btn admin-btn-warning">
+                        <i class="bi bi-hourglass-split"></i> Ожидающие заказы
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

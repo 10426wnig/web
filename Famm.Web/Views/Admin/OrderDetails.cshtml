@@ -1,0 +1,235 @@
+﻿@model Famm.Domain.Models.Order
+@{
+    ViewBag.Title = "Детали заказа #" + Model.OrderNumber;
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h3>
+                    <span class="me-2">Заказ #@Model.OrderNumber</span>
+                    @switch (Model.Status)
+                    {
+                        case Famm.Domain.Models.Enums.OrderStatus.Pending:
+                            <span class="badge bg-warning">Ожидание</span>
+                            break;
+                        case Famm.Domain.Models.Enums.OrderStatus.Processing:
+                            <span class="badge bg-info">Обработка</span>
+                            break;
+                        case Famm.Domain.Models.Enums.OrderStatus.Shipped:
+                            <span class="badge bg-primary">Отправлен</span>
+                            break;
+                        case Famm.Domain.Models.Enums.OrderStatus.Delivered:
+                            <span class="badge bg-success">Доставлен</span>
+                            break;
+                        case Famm.Domain.Models.Enums.OrderStatus.Cancelled:
+                            <span class="badge bg-danger">Отменен</span>
+                            break;
+                        default:
+                            <span class="badge bg-secondary">@Model.Status</span>
+                            break;
+                    }
+                </h3>
+                <a href="@Url.Action("Orders", "Admin")" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Назад к списку заказов
+                </a>
+            </div>
+            <div class="admin-card-body">
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        @TempData["SuccessMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div>
+                                <h5>Информация о заказе</h5>
+                                <p class="mb-1"><strong>Дата заказа:</strong> @Model.OrderDate.ToString("dd.MM.yyyy HH:mm")</p>
+                                <p class="mb-1"><strong>Статус:</strong> 
+                                    @switch (Model.Status)
+                                    {
+                                        case Famm.Domain.Models.Enums.OrderStatus.Pending:
+                                            <span class="badge bg-warning">Ожидание</span>
+                                            break;
+                                        case Famm.Domain.Models.Enums.OrderStatus.Processing:
+                                            <span class="badge bg-info">Обработка</span>
+                                            break;
+                                        case Famm.Domain.Models.Enums.OrderStatus.Shipped:
+                                            <span class="badge bg-primary">Отправлен</span>
+                                            break;
+                                        case Famm.Domain.Models.Enums.OrderStatus.Delivered:
+                                            <span class="badge bg-success">Доставлен</span>
+                                            break;
+                                        case Famm.Domain.Models.Enums.OrderStatus.Cancelled:
+                                            <span class="badge bg-danger">Отменен</span>
+                                            break;
+                                        default:
+                                            <span class="badge bg-secondary">@Model.Status</span>
+                                            break;
+                                    }
+                                </p>
+                                <p class="mb-1"><strong>Способ оплаты:</strong> @Model.PaymentMethod</p>
+                                <p class="mb-1"><strong>Способ доставки:</strong> @Model.ShippingMethod</p>
+                            </div>
+                            <div>
+                                <h5>Информация о клиенте</h5>
+                                <p class="mb-1"><strong>Имя:</strong> @Model.User.FullName</p>
+                                <p class="mb-1"><strong>Email:</strong> @Model.User.Email</p>
+                                <p class="mb-1"><strong>Телефон:</strong> @Model.User.PhoneNumber</p>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            @if (Model.BillingAddress != null)
+                            {
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5 class="mb-0">Адрес для выставления счета</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="mb-1">@Model.BillingAddress.AddressLine1</p>
+                                            @if (!string.IsNullOrEmpty(Model.BillingAddress.AddressLine2))
+                                            {
+                                                <p class="mb-1">@Model.BillingAddress.AddressLine2</p>
+                                            }
+                                            <p class="mb-1">@Model.BillingAddress.City, @Model.BillingAddress.State @Model.BillingAddress.PostalCode</p>
+                                            <p class="mb-1">@Model.BillingAddress.Country</p>
+                                            <p class="mb-1">@Model.BillingAddress.PhoneNumber</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            
+                            @if (Model.ShippingAddress != null)
+                            {
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5 class="mb-0">Адрес доставки</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="mb-1">@Model.ShippingAddress.AddressLine1</p>
+                                            @if (!string.IsNullOrEmpty(Model.ShippingAddress.AddressLine2))
+                                            {
+                                                <p class="mb-1">@Model.ShippingAddress.AddressLine2</p>
+                                            }
+                                            <p class="mb-1">@Model.ShippingAddress.City, @Model.ShippingAddress.State @Model.ShippingAddress.PostalCode</p>
+                                            <p class="mb-1">@Model.ShippingAddress.Country</p>
+                                            <p class="mb-1">@Model.ShippingAddress.PhoneNumber</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <h5 class="mb-3">Товары в заказе</h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Товар</th>
+                                        <th style="width: 100px">Цена</th>
+                                        <th style="width: 80px">Кол-во</th>
+                                        <th style="width: 120px">Сумма</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model.OrderItems)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    @if (item.Product != null && !string.IsNullOrEmpty(item.Product.ImageUrl))
+                                                    {
+                                                        <img src="@item.Product.ImageUrl" alt="@item.ProductName" style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px;" />
+                                                    }
+                                                    else
+                                                    {
+                                                        <div style="width: 50px; height: 50px; background-color: #eee; margin-right: 10px; display: flex; align-items: center; justify-content: center;">
+                                                            <i class="bi bi-image"></i>
+                                                        </div>
+                                                    }
+                                                    <div>
+                                                        <div>@item.ProductName</div>
+                                                        <div class="small text-muted">SKU: @item.ProductSKU</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>@item.UnitPrice.ToString("N2") MDL</td>
+                                            <td>@item.Quantity</td>
+                                            <td>@((item.UnitPrice * item.Quantity).ToString("N2")) MDL</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3" class="text-end"><strong>Подытог:</strong></td>
+                                        <td>@Model.TotalAmount.ToString("N2") MDL</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="3" class="text-end"><strong>Доставка:</strong></td>
+                                        <td>@Model.ShippingCost.ToString("N2") MDL</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="3" class="text-end"><strong>Итого:</strong></td>
+                                        <td class="fw-bold">@Model.TotalAmount.ToString("N2") MDL</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Управление заказом</h5>
+                            </div>
+                            <div class="card-body">
+                                <h6>Изменить статус заказа</h6>
+                                @using (Html.BeginForm("UpdateOrderStatus", "Admin", FormMethod.Post))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="orderId" value="@Model.Id" />
+                                    
+                                    <div class="mb-3">
+                                        <select name="status" class="form-select">
+                                            @foreach (var status in Enum.GetValues(typeof(Famm.Domain.Models.Enums.OrderStatus)))
+                                            {
+                                                <option value="@status" @(Model.Status == (Famm.Domain.Models.Enums.OrderStatus)status ? "selected" : "")>
+                                                    @status
+                                                </option>
+                                            }
+                                        </select>
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="bi bi-save"></i> Сохранить изменения
+                                    </button>
+                                }
+                                
+                                <hr />
+                                
+                                <div class="mb-3">
+                                    <h6>Уведомления</h6>
+                                    <button type="button" class="btn btn-outline-primary w-100 mb-2">
+                                        <i class="bi bi-envelope"></i> Отправить уведомление клиенту
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary w-100">
+                                        <i class="bi bi-printer"></i> Распечатать заказ
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 
