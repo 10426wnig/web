@@ -1,0 +1,137 @@
+﻿@model Famm.Domain.Models.User
+@{
+    ViewBag.Title = "Мой профиль";
+    Layout = "~/Views/Shared/_LayoutInner.cshtml";
+}
+
+<!-- inner page section -->
+<section class="inner_page_head">
+    <div class="container_fuild">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="full">
+                    <h3>Мой профиль</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- end inner page section -->
+
+<!-- profile section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <!-- Sidebar навигация -->
+            <div class="col-lg-3 mb-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="text-center mb-4">
+                            <div class="avatar mb-3">
+                                <i class="bi bi-person-circle" style="font-size: 60px;"></i>
+                            </div>
+                            <h5 class="mb-1">@Model.FirstName @Model.LastName</h5>
+                            <p class="text-muted">@Model.Email</p>
+                        </div>
+                        <div class="list-group list-group-flush">
+                            <a href="@Url.Action("Profile", "User")" class="list-group-item list-group-item-action active">
+                                <i class="bi bi-person me-2"></i> Личные данные
+                            </a>
+                            <a href="@Url.Action("Orders", "User")" class="list-group-item list-group-item-action">
+                                <i class="bi bi-bag me-2"></i> Мои заказы
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Основной контент -->
+            <div class="col-lg-9">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Личные данные</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Имя</label>
+                                <p class="form-control-static">@Model.FirstName</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Фамилия</label>
+                                <p class="form-control-static">@Model.LastName</p>
+                            </div>
+                        </div>
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <p class="form-control-static">@Model.Email</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Телефон</label>
+                                <p class="form-control-static">@(string.IsNullOrEmpty(Model.PhoneNumber) ? "Не указан" : Model.PhoneNumber)</p>
+                            </div>
+                        </div>
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Дата регистрации</label>
+                                <p class="form-control-static">@Model.RegistrationDate.ToString("dd.MM.yyyy")</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Секция с заказами -->
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Последние заказы</h5>
+                        <a href="@Url.Action("Orders", "User")" class="btn btn-sm btn-outline-primary">
+                            Все заказы
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <div id="recentOrders">
+                            <div class="d-flex justify-content-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Загрузка...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- end profile section -->
+
+@section scripts {
+<script>
+    $(document).ready(function() {
+        // Загрузка последних заказов пользователя
+        $.ajax({
+            url: '@Url.Action("Orders", "User")',
+            type: 'GET',
+            success: function(data) {
+                // Извлекаем HTML таблицы заказов из полученного ответа
+                var orderTable = $(data).find('.table').clone();
+                
+                // Ограничиваем количество строк до 3 последних
+                var rows = orderTable.find('tbody tr');
+                if (rows.length > 3) {
+                    rows.slice(3).remove();
+                }
+                
+                if (rows.length > 0) {
+                    $('#recentOrders').html(orderTable);
+                } else {
+                    $('#recentOrders').html('<div class="text-center py-4"><p class="text-muted">У вас пока нет заказов</p></div>');
+                }
+            },
+            error: function() {
+                $('#recentOrders').html('<div class="text-center py-4"><p class="text-danger">Ошибка при загрузке заказов</p></div>');
+            }
+        });
+    });
+</script>
+} 

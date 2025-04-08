@@ -1,0 +1,238 @@
+﻿@model Famm.Domain.Models.User
+@{
+    ViewBag.Title = "Информация о пользователе: " + Model.FullName;
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h3>Профиль пользователя</h3>
+                <a href="@Url.Action("Users", "Admin")" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Назад к списку пользователей
+                </a>
+            </div>
+            <div class="admin-card-body">
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        @TempData["SuccessMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+                
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        @TempData["ErrorMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <div class="mb-4">
+                                    <div style="width: 150px; height: 150px; background-color: #eee; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                                        <i class="bi bi-person fs-1 text-muted"></i>
+                                    </div>
+                                </div>
+                                <h4>@Model.FullName</h4>
+                                <p class="text-muted mb-1">@(Model.Role == "Admin" ? "Администратор" : "Пользователь")</p>
+                                <p class="text-muted mb-4">@Model.Email</p>
+                                <div class="d-flex justify-content-center gap-2 mb-4">
+                                    @using (Html.BeginForm("UpdateUserStatus", "Admin", FormMethod.Post))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="userId" value="@Model.Id" />
+                                        <input type="hidden" name="isActive" value="@((!Model.IsActive).ToString())" />
+                                        
+                                        <button type="submit" class="btn @(Model.IsActive ? "btn-warning" : "btn-success")">
+                                            <i class="bi @(Model.IsActive ? "bi-lock" : "bi-unlock")"></i> 
+                                            @(Model.IsActive ? "Заблокировать аккаунт" : "Активировать аккаунт")
+                                        </button>
+                                    }
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <p class="mb-1 text-start"><strong>ID:</strong> @Model.Id</p>
+                                        <p class="mb-1 text-start"><strong>Статус:</strong> 
+                                            @if (Model.IsActive)
+                                            {
+                                                <span class="badge bg-success">Активен</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Заблокирован</span>
+                                            }
+                                        </p>
+                                        <p class="mb-1 text-start"><strong>Дата регистрации:</strong> @Model.RegistrationDate.ToString("dd.MM.yyyy HH:mm")</p>
+                                        <p class="mb-1 text-start"><strong>Последний вход:</strong> @(Model.LastLoginDate.HasValue ? Model.LastLoginDate.Value.ToString("dd.MM.yyyy HH:mm") : "Нет данных")</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-8">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Контактная информация</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-sm-3">
+                                        <p class="mb-0">Имя</p>
+                                    </div>
+                                    <div class="col-sm-9">
+                                        <p class="text-muted mb-0">@Model.FirstName</p>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row">
+                                    <div class="col-sm-3">
+                                        <p class="mb-0">Фамилия</p>
+                                    </div>
+                                    <div class="col-sm-9">
+                                        <p class="text-muted mb-0">@Model.LastName</p>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row">
+                                    <div class="col-sm-3">
+                                        <p class="mb-0">Email</p>
+                                    </div>
+                                    <div class="col-sm-9">
+                                        <p class="text-muted mb-0">@Model.Email</p>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row">
+                                    <div class="col-sm-3">
+                                        <p class="mb-0">Телефон</p>
+                                    </div>
+                                    <div class="col-sm-9">
+                                        <p class="text-muted mb-0">@(string.IsNullOrEmpty(Model.PhoneNumber) ? "Не указан" : Model.PhoneNumber)</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Заказы пользователя</h5>
+                                <span class="badge bg-info">Всего: @Model.Orders.Count</span>
+                            </div>
+                            <div class="card-body">
+                                @if (Model.Orders.Any())
+                                {
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>№ заказа</th>
+                                                    <th>Дата</th>
+                                                    <th>Сумма</th>
+                                                    <th>Статус</th>
+                                                    <th>Действия</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var order in Model.Orders.OrderByDescending(o => o.OrderDate))
+                                                {
+                                                    <tr>
+                                                        <td>@order.OrderNumber</td>
+                                                        <td>@order.OrderDate.ToString("dd.MM.yyyy HH:mm")</td>
+                                                        <td>@order.TotalAmount.ToString("N2") MDL</td>
+                                                        <td>
+                                                            @switch (order.Status)
+                                                            {
+                                                                case Famm.Domain.Models.Enums.OrderStatus.Pending:
+                                                                    <span class="badge bg-warning">Ожидание</span>
+                                                                    break;
+                                                                case Famm.Domain.Models.Enums.OrderStatus.Processing:
+                                                                    <span class="badge bg-info">Обработка</span>
+                                                                    break;
+                                                                case Famm.Domain.Models.Enums.OrderStatus.Shipped:
+                                                                    <span class="badge bg-primary">Отправлен</span>
+                                                                    break;
+                                                                case Famm.Domain.Models.Enums.OrderStatus.Delivered:
+                                                                    <span class="badge bg-success">Доставлен</span>
+                                                                    break;
+                                                                case Famm.Domain.Models.Enums.OrderStatus.Cancelled:
+                                                                    <span class="badge bg-danger">Отменен</span>
+                                                                    break;
+                                                                default:
+                                                                    <span class="badge bg-secondary">@order.Status</span>
+                                                                    break;
+                                                            }
+                                                        </td>
+                                                        <td>
+                                                            <a href="@Url.Action("OrderDetails", "Admin", new { id = order.Id })" class="btn btn-sm btn-primary">
+                                                                <i class="bi bi-eye"></i>
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-info mb-0">
+                                        <i class="bi bi-info-circle me-2"></i> У пользователя пока нет заказов.
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Адреса пользователя</h5>
+                                <span class="badge bg-info">Всего: @Model.Addresses.Count</span>
+                            </div>
+                            <div class="card-body">
+                                @if (Model.Addresses.Any())
+                                {
+                                    <div class="row">
+                                        @foreach (var address in Model.Addresses)
+                                        {
+                                            <div class="col-md-6 mb-3">
+                                                <div class="card h-100">
+                                                    <div class="card-body">
+                                                        <h6 class="card-title">@address.AddressLine1</h6>
+                                                        <p class="mb-1">@address.User.FullName</p>
+                                                        <p class="mb-1">@address.AddressLine1</p>
+                                                        @if (!string.IsNullOrEmpty(address.AddressLine2))
+                                                        {
+                                                            <p class="mb-1">@address.AddressLine2</p>
+                                                        }
+                                                        <p class="mb-1">@address.City, @address.State @address.PostalCode</p>
+                                                        <p class="mb-1">@address.Country</p>
+                                                        @if (!string.IsNullOrEmpty(address.PhoneNumber))
+                                                        {
+                                                            <p class="mb-0">@address.PhoneNumber</p>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-info mb-0">
+                                        <i class="bi bi-info-circle me-2"></i> У пользователя пока нет сохраненных адресов.
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

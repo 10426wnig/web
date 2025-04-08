@@ -1,0 +1,147 @@
+﻿@model Famm.Domain.Models.Order
+@{
+    ViewBag.Title = "Детали заказа";
+    Layout = "~/Views/Shared/_LayoutInner.cshtml";
+}
+
+<!-- inner page section -->
+<section class="inner_page_head">
+    <div class="container_fuild">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="full">
+                    <h3>Детали заказа</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- end inner page section -->
+
+<!-- order details section -->
+<section class="py-5">
+    <div class="container">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Заказ #@Model.OrderNumber</h5>
+                    <span class="badge @(Model.Status == Famm.Domain.Models.Enums.OrderStatus.Delivered 
+                            ? "bg-success" 
+                            : (Model.Status == Famm.Domain.Models.Enums.OrderStatus.Cancelled 
+                                ? "bg-danger" 
+                                : "bg-warning"))">
+                        @switch (Model.Status)
+                        {
+                            case Famm.Domain.Models.Enums.OrderStatus.Pending:
+                                <text>В обработке</text>
+                                break;
+                            case Famm.Domain.Models.Enums.OrderStatus.Processing:
+                                <text>Обрабатывается</text>
+                                break;
+                            case Famm.Domain.Models.Enums.OrderStatus.Shipped:
+                                <text>Отправлен</text>
+                                break;
+                            case Famm.Domain.Models.Enums.OrderStatus.Delivered:
+                                <text>Доставлен</text>
+                                break;
+                            case Famm.Domain.Models.Enums.OrderStatus.Cancelled:
+                                <text>Отменен</text>
+                                break;
+                            default:
+                                <text>@Model.Status</text>
+                                break;
+                        }
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold">Информация о заказе</h6>
+                        <p class="mb-1">Дата заказа: @Model.OrderDate.ToString("dd.MM.yyyy HH:mm")</p>
+                        <p class="mb-1">Сумма заказа: @Model.TotalAmount.ToString("N2") MDL</p>
+                        <p class="mb-1">Способ оплаты: @Model.PaymentMethod</p>
+                        <p class="mb-1">Статус оплаты: @(Model.IsPaid ? "Оплачено" : "Ожидает оплаты")</p>
+                        <p class="mb-1">Способ доставки: @Model.ShippingMethod</p>
+                        <p class="mb-0">Стоимость доставки: @Model.ShippingCost.ToString("N2") MDL</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold">Адрес доставки</h6>
+                        @if (Model.ShippingAddress != null)
+                        {
+                            <p class="mb-1">@Model.ShippingAddress.AddressLine1</p>
+                            if (!string.IsNullOrEmpty(Model.ShippingAddress.AddressLine2))
+                            {
+                                <p class="mb-1">@Model.ShippingAddress.AddressLine2</p>
+                            }
+                            <p class="mb-1">@Model.ShippingAddress.City, @Model.ShippingAddress.State @Model.ShippingAddress.PostalCode</p>
+                            <p class="mb-0">@Model.ShippingAddress.Country</p>
+                        }
+                        else
+                        {
+                            <p class="mb-0">Адрес доставки не указан</p>
+                        }
+                    </div>
+                </div>
+                
+                <h6 class="fw-bold mb-3">Товары в заказе</h6>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;"></th>
+                                <th>Товар</th>
+                                <th class="text-center">Цена</th>
+                                <th class="text-center">Кол-во</th>
+                                <th class="text-end">Сумма</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.OrderItems)
+                            {
+                                <tr>
+                                    <td>
+                                        <img src="@(string.IsNullOrEmpty(item.ProductImageUrl) ? Url.Content("~/Content/images/p1.png") : item.ProductImageUrl)"
+                                             style="width: 60px; height: 60px; object-fit: cover;" class="rounded" alt="@item.ProductName">
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">@item.ProductName</div>
+                                        <small class="text-muted">SKU: @item.ProductSKU</small>
+                                    </td>
+                                    <td class="text-center">@item.UnitPrice.ToString("N2") MDL</td>
+                                    <td class="text-center">@item.Quantity</td>
+                                    <td class="text-end">@item.TotalPrice.ToString("N2") MDL</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="4" class="text-end fw-bold">Подытог:</td>
+                                <td class="text-end">@((Model.TotalAmount - Model.ShippingCost).ToString("0.00")) MDL</td>
+                            </tr>
+                            <tr>
+                                <td colspan="4" class="text-end fw-bold">Доставка:</td>
+                                <td class="text-end">@Model.ShippingCost.ToString("0.00") MDL</td>
+                            </tr>
+                            <tr>
+                                <td colspan="4" class="text-end fw-bold fs-5">Итого:</td>
+                                <td class="text-end fw-bold fs-5">@Model.TotalAmount.ToString("0.00") MDL</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer bg-white">
+                <div class="d-flex justify-content-between">
+                    <a href="@Url.Action("Orders", "User")" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Назад к заказам
+                    </a>
+                    <a href="@Url.Action("Product", "Home")" class="btn btn-primary">
+                        Продолжить покупки
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- end order details section --> 
