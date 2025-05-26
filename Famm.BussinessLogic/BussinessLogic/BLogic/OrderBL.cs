@@ -18,35 +18,57 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             _dbContext = new FammDbContext();
         }
         
-        public List<Order> GetAllOrders()
+        public override List<Order> GetAllOrders()
         {
+            var baseResult = base.GetAllOrders();
+            if (baseResult != null && baseResult.Any())
+                return baseResult;
+                
             return _dbContext.Orders.ToList();
         }
         
-        public Order GetOrderById(int orderId)
+        public override Order GetOrderById(int orderId)
         {
+            var baseResult = base.GetOrderById(orderId);
+            if (baseResult != null)
+                return baseResult;
+                
             return _dbContext.Orders.FirstOrDefault(o => o.Id == orderId);
         }
         
-        public List<Order> GetOrdersByUserId(int userId)
+        public override List<Order> GetOrdersByUserId(int userId)
         {
+            var baseResult = base.GetOrdersByUserId(userId);
+            if (baseResult != null && baseResult.Any())
+                return baseResult;
+                
             return _dbContext.Orders.Where(o => o.UserId == userId).ToList();
         }
         
-        public List<Order> GetOrdersByUserId(Guid userId)
+        public override List<Order> GetOrdersByUserId(Guid userId)
         {
+            var baseResult = base.GetOrdersByUserId(userId);
+            if (baseResult != null && baseResult.Any())
+                return baseResult;
+                
             // В текущей модели используется int, но добавлена перегрузка для совместимости
             return new List<Order>();
         }
         
-        public bool CreateOrder(Order order)
+        public override bool CreateOrder(Order order)
         {
+            if (base.CreateOrder(order))
+                return true;
+                
             _dbContext.Orders.Add(order);
             return _dbContext.SaveChanges() > 0;
         }
         
-        public bool UpdateOrder(Order order)
+        public override bool UpdateOrder(Order order)
         {
+            if (base.UpdateOrder(order))
+                return true;
+                
             var existingOrder = GetOrderById(order.Id);
             
             if (existingOrder == null)
@@ -56,8 +78,11 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             return _dbContext.SaveChanges() > 0;
         }
         
-        public bool UpdateOrderStatus(int orderId, OrderStatus status)
+        public override bool UpdateOrderStatus(int orderId, OrderStatus status)
         {
+            if (base.UpdateOrderStatus(orderId, status))
+                return true;
+                
             var order = GetOrderById(orderId);
             
             if (order == null)
@@ -67,8 +92,11 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             return _dbContext.SaveChanges() > 0;
         }
         
-        public bool DeleteOrder(int orderId)
+        public override bool DeleteOrder(int orderId)
         {
+            if (base.DeleteOrder(orderId))
+                return true;
+                
             var order = GetOrderById(orderId);
             
             if (order == null)

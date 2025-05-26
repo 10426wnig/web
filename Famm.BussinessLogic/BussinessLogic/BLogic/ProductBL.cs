@@ -16,29 +16,47 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             _dbContext = new FammDbContext();
         }
         
-        public List<Product> GetAllProducts()
+        public override List<Product> GetAllProducts()
         {
+            var baseResult = base.GetAllProducts();
+            if (baseResult != null && baseResult.Any())
+                return baseResult;
+                
             return _dbContext.Products.ToList();
         }
         
-        public Product GetProductById(int productId)
+        public override Product GetProductById(int productId)
         {
+            var baseResult = base.GetProductById(productId);
+            if (baseResult != null)
+                return baseResult;
+                
             return _dbContext.Products.FirstOrDefault(p => p.Id == productId);
         }
         
-        public List<Product> GetProductsByCategory(int categoryId)
+        public override List<Product> GetProductsByCategory(int categoryId)
         {
+            var baseResult = base.GetProductsByCategory(categoryId);
+            if (baseResult != null && baseResult.Any())
+                return baseResult;
+                
             return _dbContext.Products.Where(p => p.CategoryId == categoryId).ToList();
         }
         
-        public bool AddProduct(Product product)
+        public override bool AddProduct(Product product)
         {
+            if (base.AddProduct(product))
+                return true;
+                
             _dbContext.Products.Add(product);
             return _dbContext.SaveChanges() > 0;
         }
         
-        public bool UpdateProduct(Product product)
+        public override bool UpdateProduct(Product product)
         {
+            if (base.UpdateProduct(product))
+                return true;
+                
             var existingProduct = GetProductById(product.Id);
             
             if (existingProduct == null)
@@ -48,8 +66,11 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             return _dbContext.SaveChanges() > 0;
         }
         
-        public bool DeleteProduct(int productId)
+        public override bool DeleteProduct(int productId)
         {
+            if (base.DeleteProduct(productId))
+                return true;
+                
             var product = GetProductById(productId);
             
             if (product == null)

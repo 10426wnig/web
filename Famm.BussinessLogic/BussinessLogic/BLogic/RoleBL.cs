@@ -18,13 +18,21 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             _dbContext = new FammDbContext();
         }
         
-        public string[] GetAllRoles()
+        public override string[] GetAllRoles()
         {
+            var baseResult = base.GetAllRoles();
+            if (baseResult != null && baseResult.Length > 0)
+                return baseResult;
+                
             return _availableRoles;
         }
         
-        public string[] GetRolesForUser(string username)
+        public override string[] GetRolesForUser(string username)
         {
+            var baseResult = base.GetRolesForUser(username);
+            if (baseResult != null && baseResult.Length > 0)
+                return baseResult;
+                
             var user = _dbContext.Users.FirstOrDefault(u => u.Email == username);
             
             if (user == null || string.IsNullOrEmpty(user.Role))
@@ -33,8 +41,12 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             return new[] { user.Role };
         }
         
-        public string[] GetUsersInRole(string roleName)
+        public override string[] GetUsersInRole(string roleName)
         {
+            var baseResult = base.GetUsersInRole(roleName);
+            if (baseResult != null && baseResult.Length > 0)
+                return baseResult;
+                
             if (!RoleExists(roleName))
                 return new string[0];
             
@@ -44,8 +56,11 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
                 .ToArray();
         }
         
-        public bool IsUserInRole(string username, string roleName)
+        public override bool IsUserInRole(string username, string roleName)
         {
+            if (base.IsUserInRole(username, roleName))
+                return true;
+                
             var user = _dbContext.Users.FirstOrDefault(u => u.Email == username);
             
             if (user == null || string.IsNullOrEmpty(user.Role))
@@ -54,8 +69,11 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             return string.Equals(user.Role, roleName, StringComparison.OrdinalIgnoreCase);
         }
         
-        public bool RoleExists(string roleName)
+        public override bool RoleExists(string roleName)
         {
+            if (base.RoleExists(roleName))
+                return true;
+                
             return _availableRoles.Contains(roleName, StringComparer.OrdinalIgnoreCase);
         }
         

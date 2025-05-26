@@ -20,23 +20,27 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             _dbContext = new FammDbContext();
         }
         
-        public User GetUserById(int userId)
+        public override User GetUserById(int userId)
         {
-            return _dbContext.Users.FirstOrDefault(u => u.Id == userId);
+            return base.GetUserById(userId) ?? _dbContext.Users.FirstOrDefault(u => u.Id == userId);
         }
         
-        public User GetUserById(Guid userId)
+        public override User GetUserById(Guid userId)
         {
-            return null; // В текущей модели используется int, но добавлена перегрузка для совместимости
+            return base.GetUserById(userId); // В текущей модели используется int, но добавлена перегрузка для совместимости
         }
         
-        public User GetUserByEmail(string email)
+        public override User GetUserByEmail(string email)
         {
-            return _dbContext.Users.FirstOrDefault(u => u.Email == email);
+            return base.GetUserByEmail(email) ?? _dbContext.Users.FirstOrDefault(u => u.Email == email);
         }
         
-        public AuthResultDto Authenticate(string email, string password, bool rememberMe = false)
+        public override AuthResultDto Authenticate(string email, string password, bool rememberMe = false)
         {
+            var baseResult = base.Authenticate(email, password, rememberMe);
+            if (baseResult != null && baseResult.IsSuccess)
+                return baseResult;
+                
             var user = GetUserByEmail(email);
             
             if (user == null)
@@ -102,8 +106,12 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             };
         }
         
-        public SignOutResultDto SignOut()
+        public override SignOutResultDto SignOut()
         {
+            var baseResult = base.SignOut();
+            if (baseResult != null && baseResult.IsSuccess)
+                return baseResult;
+                
             var cookie = new HttpCookie(FormsAuthentication.FormsCookieName)
             {
                 Expires = DateTime.Now.AddDays(-1),
@@ -119,8 +127,12 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             };
         }
         
-        public UserProfileDto GetUserProfile(int userId)
+        public override UserProfileDto GetUserProfile(int userId)
         {
+            var baseResult = base.GetUserProfile(userId);
+            if (baseResult != null)
+                return baseResult;
+                
             var user = GetUserById(userId);
             
             if (user == null)
@@ -140,13 +152,16 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             };
         }
         
-        public UserProfileDto GetUserProfile(Guid userId)
+        public override UserProfileDto GetUserProfile(Guid userId)
         {
-            return null; // В текущей модели используется int, но добавлена перегрузка для совместимости
+            return base.GetUserProfile(userId); // В текущей модели используется int, но добавлена перегрузка для совместимости
         }
         
-        public bool UpdateUserProfile(UserProfileDto userProfile)
+        public override bool UpdateUserProfile(UserProfileDto userProfile)
         {
+            if (base.UpdateUserProfile(userProfile))
+                return true;
+                
             var user = GetUserById(userProfile.Id);
             
             if (user == null)
@@ -164,8 +179,11 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             return true;
         }
         
-        public bool ChangePassword(int userId, string oldPassword, string newPassword)
+        public override bool ChangePassword(int userId, string oldPassword, string newPassword)
         {
+            if (base.ChangePassword(userId, oldPassword, newPassword))
+                return true;
+                
             var user = GetUserById(userId);
             
             if (user == null)
@@ -179,8 +197,12 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             return true;
         }
         
-        public List<User> GetAllUsers()
+        public override List<User> GetAllUsers()
         {
+            var baseResult = base.GetAllUsers();
+            if (baseResult != null && baseResult.Any())
+                return baseResult;
+                
             return _dbContext.Users.ToList();
         }
         

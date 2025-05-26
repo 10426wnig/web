@@ -17,8 +17,12 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             _dbContext = new FammDbContext();
         }
         
-        public CartResultDto GetCartByUserId(int userId)
+        public override CartResultDto GetCartByUserId(int userId)
         {
+            var baseResult = base.GetCartByUserId(userId);
+            if (baseResult != null && baseResult.IsSuccess)
+                return baseResult;
+                
             var cart = _dbContext.Carts
                 .FirstOrDefault(c => c.UserId == userId);
                 
@@ -55,8 +59,12 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             return result;
         }
         
-        public CartResultDto GetCartByUserId(Guid userId)
+        public override CartResultDto GetCartByUserId(Guid userId)
         {
+            var baseResult = base.GetCartByUserId(userId);
+            if (baseResult != null && baseResult.IsSuccess)
+                return baseResult;
+                
             // В текущей модели используется int, но добавлена перегрузка для совместимости
             return new CartResultDto
             {
@@ -65,8 +73,12 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             };
         }
         
-        public CartResultDto AddToCart(CartActionDto cartAction)
+        public override CartResultDto AddToCart(CartActionDto cartAction)
         {
+            var baseResult = base.AddToCart(cartAction);
+            if (baseResult != null && baseResult.IsSuccess)
+                return baseResult;
+                
             // Проверяем, есть ли у пользователя корзина
             var cart = _dbContext.Carts
                 .FirstOrDefault(c => c.UserId == cartAction.UserId);
@@ -129,8 +141,12 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             return GetCartByUserId(cartAction.UserId);
         }
         
-        public CartResultDto RemoveFromCart(CartActionDto cartAction)
+        public override CartResultDto RemoveFromCart(CartActionDto cartAction)
         {
+            var baseResult = base.RemoveFromCart(cartAction);
+            if (baseResult != null && baseResult.IsSuccess)
+                return baseResult;
+                
             var cart = _dbContext.Carts
                 .FirstOrDefault(c => c.UserId == cartAction.UserId);
                 
@@ -164,8 +180,12 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             return GetCartByUserId(cartAction.UserId);
         }
         
-        public CartResultDto UpdateCartItem(CartActionDto cartAction)
+        public override CartResultDto UpdateCartItem(CartActionDto cartAction)
         {
+            var baseResult = base.UpdateCartItem(cartAction);
+            if (baseResult != null && baseResult.IsSuccess)
+                return baseResult;
+                
             var cart = _dbContext.Carts
                 .FirstOrDefault(c => c.UserId == cartAction.UserId);
                 
@@ -206,8 +226,12 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             return GetCartByUserId(cartAction.UserId);
         }
         
-        public CartResultDto ClearCart(int userId)
+        public override CartResultDto ClearCart(int userId)
         {
+            var baseResult = base.ClearCart(userId);
+            if (baseResult != null && baseResult.IsSuccess)
+                return baseResult;
+                
             var cart = _dbContext.Carts
                 .FirstOrDefault(c => c.UserId == userId);
                 

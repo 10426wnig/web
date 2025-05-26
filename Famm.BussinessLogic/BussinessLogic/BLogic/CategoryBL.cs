@@ -16,29 +16,47 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             _dbContext = new FammDbContext();
         }
         
-        public List<Category> GetAllCategories()
+        public override List<Category> GetAllCategories()
         {
+            var baseResult = base.GetAllCategories();
+            if (baseResult != null && baseResult.Any())
+                return baseResult;
+                
             return _dbContext.Categories.ToList();
         }
         
-        public Category GetCategoryById(int categoryId)
+        public override Category GetCategoryById(int categoryId)
         {
+            var baseResult = base.GetCategoryById(categoryId);
+            if (baseResult != null)
+                return baseResult;
+                
             return _dbContext.Categories.FirstOrDefault(c => c.Id == categoryId);
         }
         
-        public List<Category> GetSubcategories(int parentCategoryId)
+        public override List<Category> GetSubcategories(int parentCategoryId)
         {
+            var baseResult = base.GetSubcategories(parentCategoryId);
+            if (baseResult != null && baseResult.Any())
+                return baseResult;
+                
             return _dbContext.Categories.Where(c => c.ParentCategoryId == parentCategoryId).ToList();
         }
         
-        public bool AddCategory(Category category)
+        public override bool AddCategory(Category category)
         {
+            if (base.AddCategory(category))
+                return true;
+                
             _dbContext.Categories.Add(category);
             return _dbContext.SaveChanges() > 0;
         }
         
-        public bool UpdateCategory(Category category)
+        public override bool UpdateCategory(Category category)
         {
+            if (base.UpdateCategory(category))
+                return true;
+                
             var existingCategory = GetCategoryById(category.Id);
             
             if (existingCategory == null)
@@ -48,8 +66,11 @@ namespace Famm.BussinessLogic.BussinessLogic.BLogic
             return _dbContext.SaveChanges() > 0;
         }
         
-        public bool DeleteCategory(int categoryId)
+        public override bool DeleteCategory(int categoryId)
         {
+            if (base.DeleteCategory(categoryId))
+                return true;
+                
             var category = GetCategoryById(categoryId);
             
             if (category == null)
