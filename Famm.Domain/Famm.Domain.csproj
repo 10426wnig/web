@@ -36,10 +36,16 @@
         <Reference Include="System"/>
         <Reference Include="System.Core"/>
         <Reference Include="System.Data"/>
+        <Reference Include="System.Web"/>
         <Reference Include="System.Xml"/>
     </ItemGroup>
     <ItemGroup>
         <Compile Include="Class1.cs"/>
+        <Compile Include="DTOs\AuthResultDto.cs" />
+        <Compile Include="DTOs\CartActionDto.cs" />
+        <Compile Include="DTOs\CartResultDto.cs" />
+        <Compile Include="DTOs\SignOutResultDto.cs" />
+        <Compile Include="DTOs\UserProfileDto.cs" />
         <Compile Include="Models\Address.cs" />
         <Compile Include="Models\Cart.cs" />
         <Compile Include="Models\CartItem.cs" />
@@ -52,7 +58,7 @@
         <Compile Include="Properties\AssemblyInfo.cs"/>
     </ItemGroup>
     <ItemGroup>
-      <Folder Include="Models\DTO\" />
+      <Folder Include="DTOs\" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
