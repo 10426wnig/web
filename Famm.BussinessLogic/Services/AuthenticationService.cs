@@ -6,7 +6,7 @@ using Famm.Database.Context;
 using Famm.Domain.Models;
 using AutoMapper;
 
-namespace Famm.Application.Services
+namespace Famm.BussinessLogic.Services
 {
     /// <summary>
     /// Сервис для аутентификации и регистрации пользователей
