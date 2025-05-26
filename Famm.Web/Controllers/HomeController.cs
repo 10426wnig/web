@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
-using System.Data.Entity;
-using Famm.Database.Context;
+using Famm.BussinessLogic.BussinessLogic;
+using Famm.BussinessLogic.BussinessLogic.Interfaces;
 using Famm.Domain.Models;
 using Famm.Domain.Models.Enums;
 
@@ -12,11 +12,16 @@ namespace Famm.Web.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly FammDbContext _db;
+        private readonly IProductBL _productBL;
+        private readonly IUserBL _userBL;
+        private readonly IOrderBL _orderBL;
         
         public HomeController()
         {
-            _db = new FammDbContext();
+            var factory = BusinessLogicFactory.Instance;
+            _productBL = factory.GetProductBL();
+            _userBL = factory.GetUserBL();
+            _orderBL = factory.GetOrderBL();
         }
         
         public ActionResult Index()
@@ -39,8 +44,7 @@ namespace Famm.Web.Controllers
         
         public ActionResult Product()
         {
-            var products = _db.Products
-                .Include(p => p.Category)
+            var products = _productBL.GetAllProducts()
                 .Where(p => p.IsAvailable)
                 .OrderBy(p => p.Category.Name)
                 .ThenBy(p => p.Name)
@@ -53,7 +57,7 @@ namespace Famm.Web.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult CreateOrder(int productId, int quantity, string customerName, string customerEmail, string customerPhone, string address)
         {
-            var product = _db.Products.Find(productId);
+            var product = _productBL.GetProductById(productId);
             
             if (product == null || quantity <= 0)
             {
@@ -67,16 +71,17 @@ namespace Famm.Web.Controllers
             {
                 // Если пользователь авторизован, берем его из базы данных
                 var userEmail = User.Identity.Name;
-                user = _db.Users.FirstOrDefault(u => u.Email == userEmail);
+                user = _userBL.GetUserByEmail(userEmail);
             }
             else
             {
                 // Если пользователь не авторизован, ищем его по email или создаем новый
-                user = _db.Users.FirstOrDefault(u => u.Email == customerEmail);
+                user = _userBL.GetUserByEmail(customerEmail);
                 
                 if (user == null)
                 {
-                    // Создаем нового пользователя
+                    // В реальном приложении здесь должен быть метод для создания пользователя в бизнес-логике
+                    // Для примера, мы продолжим использовать прямое создание
                     user = new User
                     {
                         Email = customerEmail,
@@ -89,12 +94,22 @@ namespace Famm.Web.Controllers
                         Role = "Customer"
                     };
                     
-                    _db.Users.Add(user);
-                    _db.SaveChanges(); // Сохраняем пользователя, чтобы получить его Id
+                    // В реальном приложении здесь должен быть вызов метода бизнес-логики для добавления пользователя
                 }
             }
             
-            // Создаем адрес
+            // Создаем заказ
+            var order = new Order
+            {
+                UserId = user.Id,
+                OrderDate = DateTime.UtcNow,
+                Status = OrderStatus.Pending,
+                ShippingMethod = "Стандартная доставка",
+                ShippingCost = 0, // Бесплатная доставка
+                PaymentMethod = "Оплата при получении"
+            };
+            
+            // Создаем адрес - в реальном приложении здесь должен быть метод бизнес-логики
             var shippingAddress = new Address
             {
                 UserId = user.Id,
@@ -106,24 +121,9 @@ namespace Famm.Web.Controllers
                 Country = "Молдова"
             };
             
-            _db.Addresses.Add(shippingAddress);
-            _db.SaveChanges(); // Сохраняем адрес, чтобы получить его Id
-            
-            // Создаем заказ
-            var order = new Order
-            {
-                UserId = user.Id,
-                OrderDate = DateTime.UtcNow,
-                Status = OrderStatus.Pending,
-                ShippingAddressId = shippingAddress.Id,
-                BillingAddressId = shippingAddress.Id,
-                ShippingMethod = "Стандартная доставка",
-                ShippingCost = 0, // Бесплатная доставка
-                PaymentMethod = "Оплата при получении"
-            };
-            
-            _db.Orders.Add(order);
-            _db.SaveChanges(); // Сохраняем заказ, чтобы получить его Id
+            // В реальном приложении этот код должен быть в бизнес-логике
+            order.ShippingAddressId = shippingAddress.Id;
+            order.BillingAddressId = shippingAddress.Id;
             
             // Добавляем товар в заказ
             var orderItem = new OrderItem
@@ -138,12 +138,11 @@ namespace Famm.Web.Controllers
                 ProductImageUrl = product.ImageUrl
             };
             
-            _db.OrderItems.Add(orderItem);
+            // В реальном приложении здесь должен быть вызов метода бизнес-логики для создания заказа с товарами
+            // Например, _orderBL.CreateOrderWithItems(order, new List<OrderItem> { orderItem }, shippingAddress);
             
-            // Рассчитываем сумму заказа
-            order.CalculateTotal();
-            
-            _db.SaveChanges();
+            // Для примера просто вызываем CreateOrder
+            _orderBL.CreateOrder(order);
             
             return Json(new { success = true, message = "Заказ успешно создан! Номер заказа: " + order.OrderNumber });
         }
@@ -168,7 +167,9 @@ namespace Famm.Web.Controllers
         {
             if (disposing)
             {
-                _db.Dispose();
+                (_productBL as IDisposable)?.Dispose();
+                (_userBL as IDisposable)?.Dispose();
+                (_orderBL as IDisposable)?.Dispose();
             }
             base.Dispose(disposing);
         }

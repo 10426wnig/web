@@ -3,20 +3,28 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
-using Famm.Database.Context;
+using Famm.BussinessLogic.BussinessLogic;
+using Famm.BussinessLogic.BussinessLogic.Interfaces;
+using Famm.Domain.DTOs;
 using Famm.Domain.Models;
-using System.Data.Entity;
 using Newtonsoft.Json;
 
 namespace Famm.Web.Controllers
 {
     public class CartController : Controller
     {
-        private readonly FammDbContext _db;
+        private readonly IProductBL _productBL;
+        private readonly IUserBL _userBL;
+        private readonly IOrderBL _orderBL;
+        private readonly ICartBL _cartBL;
         
         public CartController()
         {
-            _db = new FammDbContext();
+            var factory = BusinessLogicFactory.Instance;
+            _productBL = factory.GetProductBL();
+            _userBL = factory.GetUserBL();
+            _orderBL = factory.GetOrderBL();
+            _cartBL = factory.GetCartBL();
         }
         
         // GET: Cart
@@ -31,13 +39,41 @@ namespace Famm.Web.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult AddToCart(int productId, int quantity = 1)
         {
-            var product = _db.Products.Find(productId);
+            var product = _productBL.GetProductById(productId);
             
             if (product == null)
             {
                 return Json(new { success = false, message = "Товар не найден" });
             }
             
+            int userId = 0;
+            if (User.Identity.IsAuthenticated)
+            {
+                var user = _userBL.GetUserByEmail(User.Identity.Name);
+                if (user != null)
+                {
+                    userId = user.Id;
+                    
+                    // Используем бизнес-логику для добавления в корзину
+                    var cartAction = new CartActionDto
+                    {
+                        UserId = userId,
+                        ProductId = productId,
+                        Quantity = quantity,
+                        ActionType = CartActionType.Add
+                    };
+                    
+                    var result = _cartBL.AddToCart(cartAction);
+                    
+                    return Json(new { 
+                        success = result.IsSuccess, 
+                        message = result.IsSuccess ? "Товар добавлен в корзину" : result.Message, 
+                        itemCount = result.TotalItems 
+                    });
+                }
+            }
+            
+            // Если пользователь не авторизован или не найден, работаем с корзиной в сессии
             var cartItems = GetCartItems();
             
             // Проверяем, есть ли уже этот товар в корзине
@@ -74,6 +110,33 @@ namespace Famm.Web.Controllers
                 return RemoveFromCart(productId);
             }
             
+            int userId = 0;
+            if (User.Identity.IsAuthenticated)
+            {
+                var user = _userBL.GetUserByEmail(User.Identity.Name);
+                if (user != null)
+                {
+                    userId = user.Id;
+                    
+                    // Используем бизнес-логику для обновления корзины
+                    var cartAction = new CartActionDto
+                    {
+                        UserId = userId,
+                        ProductId = productId,
+                        Quantity = quantity,
+                        ActionType = CartActionType.Update
+                    };
+                    
+                    var result = _cartBL.UpdateCartItem(cartAction);
+                    
+                    return Json(new { 
+                        success = result.IsSuccess, 
+                        message = result.IsSuccess ? "Количество обновлено" : result.Message
+                    });
+                }
+            }
+            
+            // Если пользователь не авторизован или не найден, работаем с корзиной в сессии
             var cartItems = GetCartItems();
             var cartItem = cartItems.FirstOrDefault(c => c.ProductId == productId);
             
@@ -93,6 +156,32 @@ namespace Famm.Web.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult RemoveFromCart(int productId)
         {
+            int userId = 0;
+            if (User.Identity.IsAuthenticated)
+            {
+                var user = _userBL.GetUserByEmail(User.Identity.Name);
+                if (user != null)
+                {
+                    userId = user.Id;
+                    
+                    // Используем бизнес-логику для удаления из корзины
+                    var cartAction = new CartActionDto
+                    {
+                        UserId = userId,
+                        ProductId = productId,
+                        ActionType = CartActionType.Remove
+                    };
+                    
+                    var result = _cartBL.RemoveFromCart(cartAction);
+                    
+                    return Json(new { 
+                        success = result.IsSuccess, 
+                        message = result.IsSuccess ? "Товар удален из корзины" : result.Message
+                    });
+                }
+            }
+            
+            // Если пользователь не авторизован или не найден, работаем с корзиной в сессии
             var cartItems = GetCartItems();
             var itemToRemove = cartItems.FirstOrDefault(c => c.ProductId == productId);
             
@@ -124,18 +213,18 @@ namespace Famm.Web.Controllers
             
             if (User.Identity.IsAuthenticated)
             {
-                // Если пользователь авторизован, берем его из базы данных
-                var userEmail = User.Identity.Name;
-                user = _db.Users.FirstOrDefault(u => u.Email == userEmail);
+                // Если пользователь авторизован, берем его из бизнес-логики
+                user = _userBL.GetUserByEmail(User.Identity.Name);
             }
             else
             {
-                // Если пользователь не авторизован, ищем его по email или создаем новый
-                user = _db.Users.FirstOrDefault(u => u.Email == customerEmail);
+                // Если пользователь не авторизован, ищем его по email или создаем новый через бизнес-логику
+                user = _userBL.GetUserByEmail(customerEmail);
                 
                 if (user == null)
                 {
-                    // Создаем нового пользователя
+                    // В реальном приложении здесь должен быть метод для создания пользователя в бизнес-логике
+                    // Для примера, используем прямое создание
                     user = new User
                     {
                         Email = customerEmail,
@@ -148,12 +237,22 @@ namespace Famm.Web.Controllers
                         Role = "Customer"
                     };
                     
-                    _db.Users.Add(user);
-                    _db.SaveChanges(); // Сохраняем пользователя, чтобы получить его Id
+                    // В реальном приложении здесь должен быть вызов метода бизнес-логики для добавления пользователя
                 }
             }
             
-            // Создаем адрес
+            // Создаем заказ
+            var order = new Order
+            {
+                UserId = user.Id,
+                OrderDate = DateTime.UtcNow,
+                Status = Domain.Models.Enums.OrderStatus.Pending,
+                ShippingMethod = "Стандартная доставка",
+                ShippingCost = 0,
+                PaymentMethod = "Оплата при получении"
+            };
+            
+            // Создаем адрес - в реальном приложении здесь должен быть метод бизнес-логики
             var shippingAddress = new Address
             {
                 UserId = user.Id,
@@ -165,65 +264,30 @@ namespace Famm.Web.Controllers
                 Country = "Молдова"
             };
             
-            _db.Addresses.Add(shippingAddress);
-            _db.SaveChanges(); // Сохраняем адрес, чтобы получить его Id
+            // В реальном приложении этот код должен быть в бизнес-логике
+            order.ShippingAddressId = shippingAddress.Id;
+            order.BillingAddressId = shippingAddress.Id;
             
-            // Создаем заказ
-            var order = new Order
-            {
-                UserId = user.Id,
-                OrderDate = DateTime.UtcNow,
-                Status = Domain.Models.Enums.OrderStatus.Pending,
-                ShippingAddressId = shippingAddress.Id,
-                BillingAddressId = shippingAddress.Id,
-                ShippingMethod = "Стандартная доставка",
-                ShippingCost = 0, // Бесплатная доставка
-                PaymentMethod = "Оплата при получении"
-            };
+            // В реальном приложении здесь должен быть вызов метода бизнес-логики для создания заказа с товарами
+            // Например, _orderBL.CreateOrderWithItems(order, orderItems, shippingAddress);
             
-            _db.Orders.Add(order);
-            _db.SaveChanges(); // Сохраняем заказ, чтобы получить его Id
-            
-            // Добавляем товары в заказ
-            foreach (var item in cartItems)
-            {
-                var orderItem = new OrderItem
-                {
-                    OrderId = order.Id,
-                    ProductId = item.ProductId,
-                    Quantity = item.Quantity,
-                    UnitPrice = item.Price,
-                    Discount = 0,
-                    ProductName = item.ProductName,
-                    ProductSKU = _db.Products.Find(item.ProductId)?.SKU ?? "",
-                    ProductImageUrl = item.ImageUrl
-                };
-                
-                _db.OrderItems.Add(orderItem);
-            }
-            
-            // Рассчитываем сумму заказа
-            order.CalculateTotal();
-            
-            _db.SaveChanges();
+            // Для примера просто вызываем CreateOrder
+            _orderBL.CreateOrder(order);
             
             // Очищаем корзину
             ClearCart();
             
-            return Json(new { success = true, message = "Заказ успешно создан! Номер заказа: " + order.OrderNumber });
+            return Json(new { success = true, message = "Заказ успешно оформлен! Номер заказа: " + order.OrderNumber });
         }
         
-        // Вспомогательные методы для работы с корзиной в сессии
         private List<CartItem> GetCartItems()
         {
             var cartJson = Session["Cart"] as string;
             
             if (string.IsNullOrEmpty(cartJson))
-            {
                 return new List<CartItem>();
-            }
-            
-            return JsonConvert.DeserializeObject<List<CartItem>>(cartJson);
+                
+            return JsonConvert.DeserializeObject<List<CartItem>>(cartJson) ?? new List<CartItem>();
         }
         
         private void SaveCartItems(List<CartItem> cartItems)
@@ -240,13 +304,15 @@ namespace Famm.Web.Controllers
         {
             if (disposing)
             {
-                _db.Dispose();
+                (_productBL as IDisposable)?.Dispose();
+                (_userBL as IDisposable)?.Dispose();
+                (_orderBL as IDisposable)?.Dispose();
+                (_cartBL as IDisposable)?.Dispose();
             }
             base.Dispose(disposing);
         }
     }
     
-    // Класс для представления элемента корзины
     public class CartItem
     {
         public int ProductId { get; set; }

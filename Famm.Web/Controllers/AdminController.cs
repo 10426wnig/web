@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Data.Entity;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
-using Famm.Database.Context;
+using Famm.BussinessLogic.BussinessLogic;
+using Famm.BussinessLogic.BussinessLogic.Interfaces;
 using Famm.Domain.Models;
 using Famm.Web.Helpers;
 using Famm.Domain.Models.Enums;
@@ -15,11 +14,18 @@ namespace Famm.Web.Controllers
 {
     public class AdminController : Controller
     {
-        private readonly FammDbContext _db;
+        private readonly IProductBL _productBL;
+        private readonly ICategoryBL _categoryBL;
+        private readonly IOrderBL _orderBL;
+        private readonly IUserBL _userBL;
         
         public AdminController()
         {
-            _db = new FammDbContext();
+            var factory = BusinessLogicFactory.Instance;
+            _productBL = factory.GetProductBL();
+            _categoryBL = factory.GetCategoryBL();
+            _orderBL = factory.GetOrderBL();
+            _userBL = factory.GetUserBL();
         }
         
         // Dashboard
@@ -27,11 +33,11 @@ namespace Famm.Web.Controllers
         {
             var dashboardData = new AdminDashboardViewModel
             {
-                TotalProducts = _db.Products.Count(),
-                TotalOrders = _db.Orders.Count(),
-                TotalUsers = _db.Users.Count(),
-                RecentOrders = _db.Orders.OrderByDescending(o => o.OrderDate).Take(5).ToList(),
-                TopSellingProducts = _db.Products.OrderByDescending(p => p.OrderItems.Sum(oi => oi.Quantity)).Take(5).ToList()
+                TotalProducts = _productBL.GetAllProducts().Count(),
+                TotalOrders = _orderBL.GetAllOrders().Count(),
+                TotalUsers = _userBL.GetAllUsers().Count(),
+                RecentOrders = _orderBL.GetAllOrders().OrderByDescending(o => o.OrderDate).Take(5).ToList(),
+                TopSellingProducts = _productBL.GetAllProducts().OrderByDescending(p => p.OrderItems.Sum(oi => oi.Quantity)).Take(5).ToList()
             };
             
             return View(dashboardData);
@@ -44,7 +50,8 @@ namespace Famm.Web.Controllers
         {
             ViewBag.Search = search;
             
-            var query = _db.Products.Include(p => p.Category).AsQueryable();
+            var allProducts = _productBL.GetAllProducts();
+            var query = allProducts.AsQueryable();
             
             if (!string.IsNullOrEmpty(search))
             {
@@ -122,8 +129,7 @@ namespace Famm.Web.Controllers
                     product.ImageUrl = $"/Content/images/products/{uniqueFileName}";
                 }
                 
-                _db.Products.Add(product);
-                _db.SaveChanges();
+                _productBL.AddProduct(product);
                 
                 TempData["SuccessMessage"] = "Товар успешно создан!";
                 return RedirectToAction("Products");
@@ -136,7 +142,7 @@ namespace Famm.Web.Controllers
         // GET: /Admin/EditProduct/5
         public ActionResult EditProduct(int id)
         {
-            var product = _db.Products.Find(id);
+            var product = _productBL.GetProductById(id);
             if (product == null)
             {
                 return HttpNotFound();
@@ -167,7 +173,7 @@ namespace Famm.Web.Controllers
         {
             if (ModelState.IsValid)
             {
-                var product = _db.Products.Find(model.Id);
+                var product = _productBL.GetProductById(model.Id);
                 if (product == null)
                 {
                     return HttpNotFound();
@@ -198,28 +204,17 @@ namespace Famm.Web.Controllers
                     }
                     
                     // Delete old image if exists
-                    if (!string.IsNullOrEmpty(product.ImageUrl))
+                    if (!string.IsNullOrEmpty(product.ImageUrl) && 
+                        System.IO.File.Exists(Server.MapPath("~" + product.ImageUrl)))
                     {
-                        var oldImagePath = Server.MapPath($"~{product.ImageUrl}");
-                        if (System.IO.File.Exists(oldImagePath))
-                        {
-                            try
-                            {
-                                System.IO.File.Delete(oldImagePath);
-                            }
-                            catch
-                            {
-                                // Log error or handle exception
-                            }
-                        }
+                        System.IO.File.Delete(Server.MapPath("~" + product.ImageUrl));
                     }
                     
                     imageFile.SaveAs(uploadPath);
                     product.ImageUrl = $"/Content/images/products/{uniqueFileName}";
                 }
                 
-                _db.Entry(product).State = EntityState.Modified;
-                _db.SaveChanges();
+                _productBL.UpdateProduct(product);
                 
                 TempData["SuccessMessage"] = "Товар успешно обновлен!";
                 return RedirectToAction("Products");
@@ -232,7 +227,7 @@ namespace Famm.Web.Controllers
         // GET: /Admin/DeleteProduct/5
         public ActionResult DeleteProduct(int id)
         {
-            var product = _db.Products.Find(id);
+            var product = _productBL.GetProductById(id);
             if (product == null)
             {
                 return HttpNotFound();
@@ -246,48 +241,22 @@ namespace Famm.Web.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult DeleteProductConfirmed(int id)
         {
-            var product = _db.Products.Find(id);
+            var product = _productBL.GetProductById(id);
             if (product == null)
             {
                 return HttpNotFound();
             }
             
-            // Delete image if exists
-            if (!string.IsNullOrEmpty(product.ImageUrl))
+            // Delete product image if exists
+            if (!string.IsNullOrEmpty(product.ImageUrl) && 
+                System.IO.File.Exists(Server.MapPath("~" + product.ImageUrl)))
             {
-                var imagePath = Server.MapPath($"~{product.ImageUrl}");
-                if (System.IO.File.Exists(imagePath))
-                {
-                    try
-                    {
-                        System.IO.File.Delete(imagePath);
-                    }
-                    catch
-                    {
-                        // Log error or handle exception
-                    }
-                }
+                System.IO.File.Delete(Server.MapPath("~" + product.ImageUrl));
             }
             
-            // Check for related order items
-            var hasOrderItems = _db.OrderItems.Any(oi => oi.ProductId == id);
+            _productBL.DeleteProduct(id);
             
-            if (hasOrderItems)
-            {
-                // Set product as unavailable instead of deleting
-                product.IsAvailable = false;
-                product.UpdatedDate = DateTime.UtcNow;
-                _db.Entry(product).State = EntityState.Modified;
-                
-                TempData["WarningMessage"] = "Товар имеет связанные заказы. Он был отмечен как недоступный вместо удаления.";
-            }
-            else
-            {
-                _db.Products.Remove(product);
-                TempData["SuccessMessage"] = "Товар успешно удален!";
-            }
-            
-            _db.SaveChanges();
+            TempData["SuccessMessage"] = "Товар успешно удален!";
             return RedirectToAction("Products");
         }
         
@@ -298,12 +267,7 @@ namespace Famm.Web.Controllers
         // GET: /Admin/Categories
         public ActionResult Categories()
         {
-            var categories = _db.Categories
-                .Include(c => c.ParentCategory)
-                .OrderBy(c => c.DisplayOrder)
-                .ThenBy(c => c.Name)
-                .ToList();
-            
+            var categories = _categoryBL.GetAllCategories();
             return View(categories);
         }
         
@@ -327,8 +291,7 @@ namespace Famm.Web.Controllers
                     Description = model.Description,
                     ParentCategoryId = model.ParentCategoryId,
                     DisplayOrder = model.DisplayOrder,
-                    IsActive = model.IsActive,
-                    CreatedDate = DateTime.UtcNow
+                    IsActive = model.IsActive
                 };
                 
                 // Handle image upload
@@ -349,8 +312,7 @@ namespace Famm.Web.Controllers
                     category.ImageUrl = $"/Content/images/categories/{uniqueFileName}";
                 }
                 
-                _db.Categories.Add(category);
-                _db.SaveChanges();
+                _categoryBL.AddCategory(category);
                 
                 TempData["SuccessMessage"] = "Категория успешно создана!";
                 return RedirectToAction("Categories");
@@ -363,7 +325,7 @@ namespace Famm.Web.Controllers
         // GET: /Admin/EditCategory/5
         public ActionResult EditCategory(int id)
         {
-            var category = _db.Categories.Find(id);
+            var category = _categoryBL.GetCategoryById(id);
             if (category == null)
             {
                 return HttpNotFound();
@@ -380,7 +342,6 @@ namespace Famm.Web.Controllers
                 ImageUrl = category.ImageUrl
             };
             
-            // Exclude self from parent categories list
             ViewBag.ParentCategories = GetParentCategoriesSelectList(category.ParentCategoryId, category.Id);
             return View(model);
         }
@@ -392,7 +353,7 @@ namespace Famm.Web.Controllers
         {
             if (ModelState.IsValid)
             {
-                var category = _db.Categories.Find(model.Id);
+                var category = _categoryBL.GetCategoryById(model.Id);
                 if (category == null)
                 {
                     return HttpNotFound();
@@ -419,28 +380,17 @@ namespace Famm.Web.Controllers
                     }
                     
                     // Delete old image if exists
-                    if (!string.IsNullOrEmpty(category.ImageUrl))
+                    if (!string.IsNullOrEmpty(category.ImageUrl) && 
+                        System.IO.File.Exists(Server.MapPath("~" + category.ImageUrl)))
                     {
-                        var oldImagePath = Server.MapPath($"~{category.ImageUrl}");
-                        if (System.IO.File.Exists(oldImagePath))
-                        {
-                            try
-                            {
-                                System.IO.File.Delete(oldImagePath);
-                            }
-                            catch
-                            {
-                                // Log error or handle exception
-                            }
-                        }
+                        System.IO.File.Delete(Server.MapPath("~" + category.ImageUrl));
                     }
                     
                     imageFile.SaveAs(uploadPath);
                     category.ImageUrl = $"/Content/images/categories/{uniqueFileName}";
                 }
                 
-                _db.Entry(category).State = EntityState.Modified;
-                _db.SaveChanges();
+                _categoryBL.UpdateCategory(category);
                 
                 TempData["SuccessMessage"] = "Категория успешно обновлена!";
                 return RedirectToAction("Categories");
@@ -453,7 +403,7 @@ namespace Famm.Web.Controllers
         // GET: /Admin/DeleteCategory/5
         public ActionResult DeleteCategory(int id)
         {
-            var category = _db.Categories.Find(id);
+            var category = _categoryBL.GetCategoryById(id);
             if (category == null)
             {
                 return HttpNotFound();
@@ -467,43 +417,20 @@ namespace Famm.Web.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult DeleteCategoryConfirmed(int id)
         {
-            var category = _db.Categories.Find(id);
+            var category = _categoryBL.GetCategoryById(id);
             if (category == null)
             {
                 return HttpNotFound();
             }
             
-            // Check for child categories
-            var hasChildCategories = _db.Categories.Any(c => c.ParentCategoryId == id);
-            
-            // Check for products in this category
-            var hasProducts = _db.Products.Any(p => p.CategoryId == id);
-            
-            if (hasChildCategories || hasProducts)
+            // Delete category image if exists
+            if (!string.IsNullOrEmpty(category.ImageUrl) && 
+                System.IO.File.Exists(Server.MapPath("~" + category.ImageUrl)))
             {
-                TempData["ErrorMessage"] = "Нельзя удалить категорию, которая содержит товары или подкатегории.";
-                return RedirectToAction("Categories");
+                System.IO.File.Delete(Server.MapPath("~" + category.ImageUrl));
             }
             
-            // Delete image if exists
-            if (!string.IsNullOrEmpty(category.ImageUrl))
-            {
-                var imagePath = Server.MapPath($"~{category.ImageUrl}");
-                if (System.IO.File.Exists(imagePath))
-                {
-                    try
-                    {
-                        System.IO.File.Delete(imagePath);
-                    }
-                    catch
-                    {
-                        // Log error or handle exception
-                    }
-                }
-            }
-            
-            _db.Categories.Remove(category);
-            _db.SaveChanges();
+            _categoryBL.DeleteCategory(id);
             
             TempData["SuccessMessage"] = "Категория успешно удалена!";
             return RedirectToAction("Categories");
@@ -516,12 +443,14 @@ namespace Famm.Web.Controllers
         // GET: /Admin/Orders
         public ActionResult Orders(string status = "", int page = 1, int pageSize = 10)
         {
-            var query = _db.Orders.Include(o => o.User).AsQueryable();
+            ViewBag.Status = status;
+            
+            var allOrders = _orderBL.GetAllOrders();
+            var query = allOrders.AsQueryable();
             
             if (!string.IsNullOrEmpty(status))
             {
-                OrderStatus orderStatus;
-                if (Enum.TryParse(status, out orderStatus))
+                if (Enum.TryParse<OrderStatus>(status, out var orderStatus))
                 {
                     query = query.Where(o => o.Status == orderStatus);
                 }
@@ -554,14 +483,8 @@ namespace Famm.Web.Controllers
         // GET: /Admin/OrderDetails/5
         public ActionResult OrderDetails(int id)
         {
-            var order = _db.Orders
-                .Include(o => o.User)
-                .Include(o => o.OrderItems)
-                .Include(o => o.OrderItems.Select(oi => oi.Product))
-                .Include(o => o.BillingAddress)
-                .Include(o => o.ShippingAddress)
-                .FirstOrDefault(o => o.Id == id);
-                
+            var order = _orderBL.GetOrderById(id);
+            
             if (order == null)
             {
                 return HttpNotFound();
@@ -575,17 +498,19 @@ namespace Famm.Web.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult UpdateOrderStatus(int orderId, OrderStatus status)
         {
-            var order = _db.Orders.Find(orderId);
-            if (order == null)
+            var order = _orderBL.GetOrderById(orderId);
+            
+            if (order != null)
             {
-                return HttpNotFound();
+                _orderBL.UpdateOrderStatus(orderId, status);
+                
+                TempData["SuccessMessage"] = "Статус заказа успешно обновлен!";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Заказ не найден!";
             }
             
-            order.Status = status;
-            order.ShippingDate = DateTime.UtcNow;
-            _db.SaveChanges();
-            
-            TempData["SuccessMessage"] = "Статус заказа успешно обновлен!";
             return RedirectToAction("OrderDetails", new { id = orderId });
         }
         
@@ -596,7 +521,10 @@ namespace Famm.Web.Controllers
         // GET: /Admin/Users
         public ActionResult Users(string search = "", int page = 1, int pageSize = 10)
         {
-            var query = _db.Users.AsQueryable();
+            ViewBag.Search = search;
+            
+            var allUsers = _userBL.GetAllUsers();
+            var query = allUsers.AsQueryable();
             
             if (!string.IsNullOrEmpty(search))
             {
@@ -612,7 +540,7 @@ namespace Famm.Web.Controllers
             if (page > totalPages && totalPages > 0) page = totalPages;
             
             var users = query
-                .OrderByDescending(u => u.Id)
+                .OrderByDescending(u => u.RegistrationDate)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToList();
@@ -632,11 +560,8 @@ namespace Famm.Web.Controllers
         // GET: /Admin/UserDetails/5
         public ActionResult UserDetails(int id)
         {
-            var user = _db.Users
-                .Include(u => u.Orders)
-                .Include(u => u.Addresses)
-                .FirstOrDefault(u => u.Id == id);
-                
+            var user = _userBL.GetUserById(id);
+            
             if (user == null)
             {
                 return HttpNotFound();
@@ -650,24 +575,19 @@ namespace Famm.Web.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult UpdateUserStatus(int userId, string isActive)
         {
-            var user = _db.Users.Find(userId);
-            if (user == null)
-            {
-                return HttpNotFound();
-            }
+            var user = _userBL.GetUserById(userId);
             
-            // Преобразование строки в bool
-            bool isActiveValue;
-            if (bool.TryParse(isActive, out isActiveValue))
+            if (user != null)
             {
-                user.IsActive = isActiveValue;
-                _db.SaveChanges();
+                var userProfile = _userBL.GetUserProfile(userId);
+                userProfile.IsActive = isActive.ToLower() == "true";
+                _userBL.UpdateUserProfile(userProfile);
                 
-                TempData["SuccessMessage"] = isActiveValue ? "Пользователь успешно активирован!" : "Пользователь успешно заблокирован!";
+                TempData["SuccessMessage"] = "Статус пользователя успешно обновлен!";
             }
             else
             {
-                TempData["ErrorMessage"] = "Ошибка при изменении статуса пользователя. Неверный формат данных.";
+                TempData["ErrorMessage"] = "Пользователь не найден!";
             }
             
             return RedirectToAction("UserDetails", new { id = userId });
@@ -675,41 +595,37 @@ namespace Famm.Web.Controllers
         
         #endregion
         
-        #region Helper Methods
+        #region Helpers
         
         private SelectList GetCategoriesSelectList(int? selectedCategoryId = null)
         {
-            var categories = _db.Categories
-                .Where(c => c.IsActive)
-                .OrderBy(c => c.DisplayOrder)
-                .ThenBy(c => c.Name)
+            var categories = _categoryBL.GetAllCategories()
+                .OrderBy(c => c.Name)
                 .ToList();
-            
+                
             return new SelectList(categories, "Id", "Name", selectedCategoryId);
         }
         
         private SelectList GetParentCategoriesSelectList(int? selectedCategoryId = null, int? excludeCategoryId = null)
         {
-            var categories = _db.Categories
-                .Where(c => c.IsActive && (excludeCategoryId == null || c.Id != excludeCategoryId.Value))
-                .OrderBy(c => c.DisplayOrder)
-                .ThenBy(c => c.Name)
+            var categories = _categoryBL.GetAllCategories()
+                .Where(c => !excludeCategoryId.HasValue || c.Id != excludeCategoryId.Value)
+                .OrderBy(c => c.Name)
                 .ToList();
-            
-            // Add empty option for root categories
-            var selectList = new List<SelectListItem>
+                
+            var items = new List<SelectListItem>
             {
-                new SelectListItem { Value = "", Text = "-- Корневая категория --" }
+                new SelectListItem { Value = "", Text = "-- Нет родительской категории --" }
             };
             
-            selectList.AddRange(categories.Select(c => new SelectListItem
+            items.AddRange(categories.Select(c => new SelectListItem
             {
                 Value = c.Id.ToString(),
                 Text = c.Name,
                 Selected = selectedCategoryId.HasValue && c.Id == selectedCategoryId.Value
             }));
             
-            return new SelectList(selectList, "Value", "Text", selectedCategoryId);
+            return new SelectList(items, "Value", "Text", selectedCategoryId);
         }
         
         #endregion
@@ -718,7 +634,10 @@ namespace Famm.Web.Controllers
         {
             if (disposing)
             {
-                _db.Dispose();
+                (_productBL as IDisposable)?.Dispose();
+                (_categoryBL as IDisposable)?.Dispose();
+                (_orderBL as IDisposable)?.Dispose();
+                (_userBL as IDisposable)?.Dispose();
             }
             base.Dispose(disposing);
         }
@@ -758,7 +677,7 @@ namespace Famm.Web.Controllers
         public ProductViewModel()
         {
             IsAvailable = true;
-            StockQuantity = 0;
+            StockQuantity = 1;
         }
     }
     
@@ -775,7 +694,7 @@ namespace Famm.Web.Controllers
         public CategoryViewModel()
         {
             IsActive = true;
-            DisplayOrder = 0;
+            DisplayOrder = 1;
         }
     }
     

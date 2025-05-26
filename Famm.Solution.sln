@@ -6,7 +6,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Famm.Domain", "Famm.Domain\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Famm.Database", "Famm.Database\Famm.Database.csproj", "{8F7F1EBD-3C1F-4573-9A83-166EEF9B68D6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Famm.Application", "Famm.Application\Famm.Application.csproj", "{6B5ED2D7-6136-4BD4-8D3A-001A26862AA3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Famm.BussinessLogic", "Famm.BussinessLogic\Famm.BussinessLogic.csproj", "{6B5ED2D7-6136-4BD4-8D3A-001A26862AA3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

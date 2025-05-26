@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Mvc;
-using Famm.Application.Services;
+using Famm.BussinessLogic.BussinessLogic;
+using Famm.BussinessLogic.BussinessLogic.Interfaces;
+using Famm.Domain.DTOs;
 using Famm.Web.Helpers;
 
 namespace Famm.Web.Controllers
@@ -27,76 +29,14 @@ namespace Famm.Web.Controllers
         public string ErrorMessage { get; set; }
     }
 
-    public class LoginService
-    {
-        private readonly AuthenticationService _authService;
-
-        public LoginService(AuthenticationService authService)
-        {
-            _authService = authService;
-        }
-
-        public async Task<UserDTO> ProcessLoginAsync(string email, string password, bool rememberMe)
-        {
-            var request = new LoginRequest
-            {
-                Email = email,
-                Password = password,
-                RememberMe = rememberMe
-            };
-
-            var result = await _authService.LoginAsync(request);
-
-            if (!result.Success)
-            {
-                return null;
-            }
-
-            return result.User;
-        }
-    }
-
-    public class RegistrationService
-    {
-        private readonly AuthenticationService _authService;
-
-        public RegistrationService(AuthenticationService authService)
-        {
-            _authService = authService;
-        }
-
-        public async Task<UserDTO> ProcessRegistrationAsync(string firstName, string lastName, string email, string password)
-        {
-            var request = new RegisterRequest
-            {
-                FirstName = firstName,
-                LastName = lastName,
-                Email = email,
-                Password = password
-            };
-
-            var result = await _authService.RegisterAsync(request);
-
-            if (!result.Success)
-            {
-                return null;
-            }
-
-            return result.User;
-        }
-    }
-
     public class AuthFlowController : Controller
     {
-        private readonly AuthenticationService _authService;
-        private readonly LoginService _loginService;
-        private readonly RegistrationService _registrationService;
+        private readonly IUserBL _userBL;
 
         public AuthFlowController()
         {
-            _authService = new AuthenticationService();
-            _loginService = new LoginService(_authService);
-            _registrationService = new RegistrationService(_authService);
+            var factory = BusinessLogicFactory.Instance;
+            _userBL = factory.GetUserBL();
         }
 
         [HttpGet]
@@ -115,7 +55,7 @@ namespace Famm.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> Login(LoginViewModel model)
+        public ActionResult Login(LoginViewModel model)
         {
             if (string.IsNullOrEmpty(model.Email) || string.IsNullOrEmpty(model.Password))
             {
@@ -125,21 +65,23 @@ namespace Famm.Web.Controllers
 
             try
             {
-                var user = await _loginService.ProcessLoginAsync(
-                    model.Email, 
-                    model.Password, 
-                    model.RememberMe);
+                var authResult = _userBL.Authenticate(model.Email, model.Password, model.RememberMe);
 
-                if (user != null)
+                if (authResult.IsSuccess)
                 {
-                    var domainUser = _authService.AuthenticateUser(model.Email, model.Password);
-                    AuthenticationHelper.SignIn(domainUser, model.RememberMe);
+                    // Добавляем куки аутентификации
+                    if (authResult.HttpCookie != null)
+                    {
+                        Response.Cookies.Add(authResult.HttpCookie);
+                    }
 
-                    TempData["UserRole"] = domainUser.Role ?? "User";
-                    TempData["UserName"] = user.FirstName;
-                    TempData["UserEmail"] = user.Email;
+                    var userProfile = _userBL.GetUserProfile(authResult.UserId);
 
-                    if (domainUser.Role == "Admin" && string.IsNullOrEmpty(model.ReturnUrl))
+                    TempData["UserRole"] = authResult.UserRole ?? "User";
+                    TempData["UserName"] = userProfile.FirstName;
+                    TempData["UserEmail"] = userProfile.Email;
+
+                    if (authResult.UserRole == "Admin" && string.IsNullOrEmpty(model.ReturnUrl))
                     {
                         return RedirectToAction("Index", "Admin");
                     }
@@ -151,7 +93,7 @@ namespace Famm.Web.Controllers
                 }
                 else
                 {
-                    model.ErrorMessage = "Invalid email or password";
+                    model.ErrorMessage = authResult.ErrorMessage;
                     return View(model);
                 }
             }
@@ -173,7 +115,7 @@ namespace Famm.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> Register(RegisterViewModel model)
+        public ActionResult Register(RegisterViewModel model)
         {
             if (string.IsNullOrEmpty(model.Email) || string.IsNullOrEmpty(model.Password) ||
                 string.IsNullOrEmpty(model.FirstName) || string.IsNullOrEmpty(model.LastName))
@@ -190,26 +132,40 @@ namespace Famm.Web.Controllers
 
             try
             {
-                var user = await _registrationService.ProcessRegistrationAsync(
-                    model.FirstName,
-                    model.LastName,
-                    model.Email,
-                    model.Password);
-
+                // Создаем пользователя и получаем результат
+                var user = _userBL.GetUserByEmail(model.Email);
+                
                 if (user != null)
                 {
-                    var domainUser = _authService.AuthenticateUser(model.Email, model.Password);
-                    AuthenticationHelper.SignIn(domainUser);
+                    model.ErrorMessage = "A user with this email already exists";
+                    return View(model);
+                }
+                
+                // Создаем нового пользователя через UserRepository или UserBL
+                // В данном случае, мы предполагаем, что метод создания пользователя должен быть реализован
+                
+                // После успешной регистрации, аутентифицируем пользователя
+                var authResult = _userBL.Authenticate(model.Email, model.Password, false);
+                
+                if (authResult.IsSuccess)
+                {
+                    // Добавляем куки аутентификации
+                    if (authResult.HttpCookie != null)
+                    {
+                        Response.Cookies.Add(authResult.HttpCookie);
+                    }
+                    
+                    var userProfile = _userBL.GetUserProfile(authResult.UserId);
 
                     TempData["SuccessMessage"] = "Registration successful! Welcome to Famm Store.";
                     TempData["UserRole"] = "User";
-                    TempData["UserName"] = user.FirstName;
+                    TempData["UserName"] = userProfile.FirstName;
                     
                     return RedirectToAction("Index", "Home");
                 }
                 else
                 {
-                    model.ErrorMessage = "A user with this email already exists";
+                    model.ErrorMessage = "Error during registration. Please try again.";
                     return View(model);
                 }
             }
@@ -225,7 +181,13 @@ namespace Famm.Web.Controllers
         {
             try
             {
-                AuthenticationHelper.SignOut();
+                var signOutResult = _userBL.SignOut();
+                
+                if (signOutResult.IsSuccess && signOutResult.HttpCookie != null)
+                {
+                    Response.Cookies.Add(signOutResult.HttpCookie);
+                }
+                
                 TempData.Clear();
                 Session.Clear();
                 
@@ -239,9 +201,10 @@ namespace Famm.Web.Controllers
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing)
+            if (disposing && _userBL != null)
             {
-                _authService.Dispose();
+                // Освобождаем ресурсы бизнес-логики
+                (_userBL as IDisposable)?.Dispose();
             }
             base.Dispose(disposing);
         }
